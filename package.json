@@ -54,7 +54,7 @@
     "@typescript/native-preview": "^7.0.0-dev.20260401.1",
     "effect": "4.0.0-beta.43",
     "typescript": "^5.9.3",
-    "vite-plus": "^0.1.14",
+    "vite-plus": "^0.1.15",
     "vitest": "^4.1.0"
   },
   "peerDependencies": {
