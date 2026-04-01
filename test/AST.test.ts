@@ -363,3 +363,97 @@ describe('hasAncestor', () => {
 		expect(AST.hasAncestor(node, 'ClassDeclaration')).toBe(false);
 	});
 });
+
+// ---------------------------------------------------------------------------
+// narrow (Phase 2)
+// ---------------------------------------------------------------------------
+
+describe('narrow', () => {
+	test('returns Some when type matches', () => {
+		const node = callExpr('foo');
+		const result = AST.narrow(node, 'CallExpression');
+		expect(Option.isSome(result)).toBe(true);
+	});
+
+	test('returns None when type does not match', () => {
+		const node = callExpr('foo');
+		const result = AST.narrow(node, 'MemberExpression');
+		expect(Option.isNone(result)).toBe(true);
+	});
+
+	test('supports data-last (pipeable) form', () => {
+		const node = importDecl('effect');
+		const result = AST.narrow('ImportDeclaration')(node);
+		expect(Option.isSome(result)).toBe(true);
+	});
+
+	test('returns None for wrong type in pipeable form', () => {
+		const node = importDecl('effect');
+		const result = AST.narrow('CallExpression')(node);
+		expect(Option.isNone(result)).toBe(true);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// memberPath (Phase 2)
+// ---------------------------------------------------------------------------
+
+describe('memberPath', () => {
+	test('extracts two-segment path: Effect.gen', () => {
+		const node = memberExpr('Effect', 'gen');
+		const result = AST.memberPath(node);
+		expect(Option.isSome(result)).toBe(true);
+		expect(
+			Option.getOrElse(result, () => [] as ReadonlyArray<string>)
+		).toEqual(['Effect', 'gen']);
+	});
+
+	test('extracts three-segment path: a.b.c', () => {
+		// Build a.b.c manually: MemberExpression(MemberExpression(a, b), c)
+		const ab = memberExpr('a', 'b');
+		const abc = {
+			type: 'MemberExpression',
+			object: ab,
+			property: id('c'),
+			computed: false,
+			optional: false
+		} as never;
+		const result = AST.memberPath(abc);
+		expect(Option.isSome(result)).toBe(true);
+		expect(
+			Option.getOrElse(result, () => [] as ReadonlyArray<string>)
+		).toEqual(['a', 'b', 'c']);
+	});
+
+	test('returns None for computed member expression', () => {
+		const node = computedMemberExpr('a', 'b');
+		const result = AST.memberPath(node);
+		expect(Option.isNone(result)).toBe(true);
+	});
+
+	test('returns None when inner segment is computed', () => {
+		const inner = computedMemberExpr('a', 'b');
+		const outer = {
+			type: 'MemberExpression',
+			object: inner,
+			property: id('c'),
+			computed: false,
+			optional: false
+		} as never;
+		const result = AST.memberPath(outer);
+		expect(Option.isNone(result)).toBe(true);
+	});
+
+	test('returns None when root is not an identifier', () => {
+		// root is a Literal, not an Identifier
+		const node = {
+			type: 'MemberExpression',
+			object: strLiteral('foo'),
+			property: id('bar'),
+			computed: false,
+			optional: false
+		} as never;
+		const result = AST.memberPath(node);
+		expect(Option.isNone(result)).toBe(true);
+	});
+});

@@ -351,6 +351,91 @@ export const objectGetValue: {
 );
 
 // ---------------------------------------------------------------------------
+// Node narrowing
+// ---------------------------------------------------------------------------
+
+/**
+ * Narrow an AST node to a specific `type` string, returning `Option<Node>`.
+ *
+ * This is a safe alternative to casting — returns `Option.none()` if the
+ * node's `type` doesn't match.
+ *
+ * @example
+ * ```ts
+ * AST.narrow(node, 'Identifier')       // Option<Node & { type: "Identifier" }>
+ * AST.narrow(node, 'CallExpression')    // Option<Node & { type: "CallExpression" }>
+ * ```
+ *
+ * @since 0.2.0
+ */
+export const narrow: {
+	<T extends string>(
+		type: T
+	): (node: ESTree.Node) => Option.Option<ESTree.Node & { readonly type: T }>;
+	<T extends string>(
+		node: ESTree.Node,
+		type: T
+	): Option.Option<ESTree.Node & { readonly type: T }>;
+} = dual(
+	2,
+	<T extends string>(
+		node: ESTree.Node,
+		type: T
+	): Option.Option<ESTree.Node & { readonly type: T }> =>
+		(node as { readonly type: string }).type === type
+			? Option.some(node as ESTree.Node & { readonly type: T })
+			: Option.none()
+);
+
+// ---------------------------------------------------------------------------
+// Member path extraction
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract the full member path from a (possibly chained) `MemberExpression`.
+ *
+ * Walks `a.b.c` → `['a', 'b', 'c']`. Returns `Option.none()` if any
+ * segment is computed or non-identifier.
+ *
+ * @example
+ * ```ts
+ * // node is `Effect.gen` → Some(['Effect', 'gen'])
+ * AST.memberPath(node)
+ * // node is `a.b.c.d` → Some(['a', 'b', 'c', 'd'])
+ * AST.memberPath(node)
+ * // node is `a[b].c` → None (computed segment)
+ * AST.memberPath(node)
+ * ```
+ *
+ * @since 0.2.0
+ */
+export const memberPath = (
+	node: ESTree.MemberExpression
+): Option.Option<Arr.NonEmptyReadonlyArray<string>> => {
+	const segments: Array<string> = [];
+	let current: ESTree.Expression | ESTree.PrivateIdentifier = node;
+	while (
+		P.isObject(current) &&
+		'type' in current &&
+		current.type === 'MemberExpression'
+	) {
+		const memberNode = current as ESTree.MemberExpression;
+		if (memberNode.computed) return Option.none();
+		const propName = identifierName(memberNode.property);
+		if (Option.isNone(propName)) return Option.none();
+		segments.unshift(propName.value);
+		current = memberNode.object;
+	}
+	return pipe(
+		identifierName(current),
+		Option.map((rootName) => {
+			segments.unshift(rootName);
+			return segments as unknown as Arr.NonEmptyReadonlyArray<string>;
+		})
+	);
+};
+
+// ---------------------------------------------------------------------------
 // Ancestor / parent helpers
 // ---------------------------------------------------------------------------
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@effect/vitest';
 import * as Effect from 'effect/Effect';
+import * as Option from 'effect/Option';
 import * as R from 'effect/Record';
 import * as Ref from 'effect/Ref';
 
@@ -162,4 +163,120 @@ describe('Visitor.tracked', () => {
 		expect(visitor['CallExpression']).toBeDefined();
 		expect(visitor['CallExpression:exit']).toBeDefined();
 	});
+});
+
+// ---------------------------------------------------------------------------
+// Visitor.filter (Phase 2)
+// ---------------------------------------------------------------------------
+
+describe('Visitor.filter', () => {
+	it.effect('returns the visitor when predicate matches', () =>
+		Effect.gen(function* () {
+			const inner = Visitor.on('ThrowStatement', () => Effect.void);
+			const visitor = yield* Visitor.filter(
+				(f) => f.endsWith('.ts'),
+				inner
+			);
+			expect(visitor['ThrowStatement']).toBeDefined();
+		}).pipe(Effect.provide(TestLayer))
+	);
+
+	it.effect('returns empty visitor when predicate fails', () =>
+		Effect.gen(function* () {
+			const inner = Visitor.on('ThrowStatement', () => Effect.void);
+			const visitor = yield* Visitor.filter(
+				(f) => f.endsWith('.js'),
+				inner
+			);
+			expect(visitor['ThrowStatement']).toBeUndefined();
+		}).pipe(Effect.provide(TestLayer))
+	);
+
+	it.effect('uses filename from RuleContext', () =>
+		Effect.gen(function* () {
+			const inner = Visitor.on('ThrowStatement', () => Effect.void);
+			const visitor = yield* Visitor.filter(
+				(f) => f.includes('custom'),
+				inner
+			);
+			expect(visitor['ThrowStatement']).toBeDefined();
+		}).pipe(
+			Effect.provide(
+				mockRuleContextLayer({ filename: '/custom/file.ts' })
+			)
+		)
+	);
+});
+
+// ---------------------------------------------------------------------------
+// Visitor.accumulate (Phase 2)
+// ---------------------------------------------------------------------------
+
+describe('Visitor.accumulate', () => {
+	it.effect('collects matching items and calls analyze at Program:exit', () =>
+		Effect.gen(function* () {
+			const results = yield* Ref.make<ReadonlyArray<string>>([]);
+			const visitor = yield* Visitor.accumulate<string>(
+				'ImportDeclaration',
+				(node) =>
+					(node as { type: string }).type === 'ImportDeclaration'
+						? Option.some(
+								(node as { source: { value: string } }).source
+									.value
+							)
+						: Option.none(),
+				(items) => Ref.update(results, () => items)
+			);
+
+			// Simulate two import visitor events
+			const enterHandler = visitor['ImportDeclaration'];
+			expect(enterHandler).toBeDefined();
+			if (enterHandler) {
+				yield* enterHandler({
+					type: 'ImportDeclaration',
+					source: { value: 'effect' }
+				} as never);
+				yield* enterHandler({
+					type: 'ImportDeclaration',
+					source: { value: 'node:fs' }
+				} as never);
+			}
+
+			// Simulate Program:exit
+			const exitHandler = visitor['Program:exit'];
+			expect(exitHandler).toBeDefined();
+			if (exitHandler) {
+				yield* exitHandler({ type: 'Program' } as never);
+			}
+
+			const accumulated = yield* Ref.get(results);
+			expect(accumulated).toEqual(['effect', 'node:fs']);
+		}).pipe(Effect.provide(TestLayer))
+	);
+
+	it.effect('skips items when extract returns None', () =>
+		Effect.gen(function* () {
+			const results = yield* Ref.make<ReadonlyArray<string>>([]);
+			const visitor = yield* Visitor.accumulate<string>(
+				'CallExpression',
+				() => Option.none(),
+				(items) => Ref.update(results, () => items)
+			);
+
+			const enterHandler = visitor['CallExpression'];
+			expect(enterHandler).toBeDefined();
+			if (enterHandler) {
+				yield* enterHandler(callOfMember('a', 'b') as never);
+			}
+
+			const exitHandler = visitor['Program:exit'];
+			expect(exitHandler).toBeDefined();
+			if (exitHandler) {
+				yield* exitHandler({ type: 'Program' } as never);
+			}
+
+			const accumulated = yield* Ref.get(results);
+			expect(accumulated).toEqual([]);
+		}).pipe(Effect.provide(TestLayer))
+	);
 });

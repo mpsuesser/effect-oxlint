@@ -9,10 +9,11 @@
 import type { ESTree, Visitor as OxlintVisitor } from '@oxlint/plugins';
 import * as Effect from 'effect/Effect';
 import { pipe } from 'effect/Function';
+import * as Option from 'effect/Option';
 import * as R from 'effect/Record';
 import * as Ref from 'effect/Ref';
 
-import type { RuleContext } from './RuleContext.ts';
+import { RuleContext } from './RuleContext.ts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -141,6 +142,78 @@ export const tracked = (
 	[`${nodeType}:exit`]: (node: ESTree.Node) =>
 		predicate(node) ? Ref.update(ref, (n) => n - 1) : Effect.void
 });
+
+/**
+ * Conditionally apply a visitor based on a predicate evaluated once
+ * at create time.
+ *
+ * Useful for restricting a visitor to specific files (e.g. skip test files).
+ *
+ * @example
+ * ```ts
+ * Visitor.filter(
+ *   (filename) => !filename.endsWith('.test.ts'),
+ *   mainVisitor
+ * )
+ * ```
+ *
+ * @since 0.2.0
+ */
+export const filter = (
+	predicate: (filename: string) => boolean,
+	visitor: EffectVisitor
+): Effect.Effect<EffectVisitor, never, RuleContext> =>
+	Effect.service(RuleContext).pipe(
+		Effect.map((ctx) => (predicate(ctx.filename) ? visitor : {}))
+	);
+
+/**
+ * Accumulate values during traversal and analyze them at `Program:exit`.
+ *
+ * The `extract` function is called for each node of `nodeType`. If it
+ * returns `Option.some(value)`, that value is accumulated. At
+ * `Program:exit`, the `analyze` generator receives all collected items.
+ *
+ * @example
+ * ```ts
+ * Visitor.accumulate(
+ *   'ExportNamedDeclaration',
+ *   (node) => AST.narrow(node, 'ExportNamedDeclaration').pipe(
+ *     Option.map(n => n.declaration)
+ *   ),
+ *   function*(accumulated) {
+ *     // Analyze all collected declarations at end of file
+ *   }
+ * )
+ * ```
+ *
+ * @since 0.2.0
+ */
+export const accumulate = <A>(
+	nodeType: string,
+	extract: (node: ESTree.Node) => Option.Option<A>,
+	analyze: (
+		items: ReadonlyArray<A>
+	) => Effect.Effect<void, never, RuleContext>
+): Effect.Effect<EffectVisitor, never, RuleContext> =>
+	Effect.gen(function* () {
+		const ref = yield* Ref.make<ReadonlyArray<A>>([]);
+		return merge(
+			on(nodeType, (node) =>
+				pipe(
+					extract(node),
+					Option.match({
+						onNone: () => Effect.void,
+						onSome: (value) =>
+							Ref.update(ref, (items) => [...items, value])
+					})
+				)
+			),
+			on('Program:exit', () =>
+				Effect.flatMap(Ref.get(ref), (items) => analyze(items))
+			)
+		);
+	});
 
 // ---------------------------------------------------------------------------
 // Conversion (internal — used by Rule.define at the runtime boundary)

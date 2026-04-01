@@ -12,6 +12,9 @@
 /** AST pattern matching helpers returning `Option` for safe composition. */
 export * as AST from './AST.ts';
 
+/** Comment type predicates and helpers. */
+export * as Comment from './Comment.ts';
+
 /** Structured diagnostic construction. */
 export * as Diagnostic from './Diagnostic.ts';
 
@@ -33,6 +36,18 @@ export {
 	text
 } from './RuleContext.ts';
 
+/** Scope analysis helpers with Option. */
+export * as Scope from './Scope.ts';
+
+/** Effect-wrapped SourceCode queries with Option. */
+export * as SourceCode from './SourceCode.ts';
+
+/** Testing infrastructure — builders, runners, assertion helpers. */
+export * as Testing from './Testing.ts';
+
+/** Token type predicates and helpers. */
+export * as Token from './Token.ts';
+
 /** Composable visitor construction. */
 export * as Visitor from './Visitor.ts';
 
@@ -41,23 +56,33 @@ export * as Visitor from './Visitor.ts';
 // ---------------------------------------------------------------------------
 
 export type {
+	Comment as OxlintComment,
 	Context,
 	CreateOnceRule,
 	CreateRule,
+	Definition,
+	DefinitionType,
 	ESTree,
 	Fix,
 	Fixer,
 	FixFn,
+	LineColumn,
+	Location,
 	Plugin as OxlintPlugin,
 	Range,
 	Ranged,
+	Reference,
 	Rule as OxlintRule,
 	RuleDocs,
 	RuleMeta,
-	Scope,
+	Scope as OxlintScope,
+	ScopeManager,
+	ScopeType,
 	Settings,
-	SourceCode,
+	SourceCode as OxlintSourceCode,
+	Span,
 	Suggestion,
-	Token,
+	Token as OxlintToken,
+	Variable,
 	Visitor as OxlintVisitor
 } from '@oxlint/plugins';
