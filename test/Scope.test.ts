@@ -4,16 +4,14 @@ import * as Option from 'effect/Option';
 import * as Scope from '../src/Scope.ts';
 import { Testing } from '../src/index.ts';
 
-const { Builders } = Testing;
-
 // ---------------------------------------------------------------------------
 // findVariable
 // ---------------------------------------------------------------------------
 
 describe('Scope.findVariable', () => {
 	test('finds a variable by name in the scope', () => {
-		const myVar = Builders.variable('myVar');
-		const s = Builders.scope({ variables: [myVar] });
+		const myVar = Testing.variable('myVar');
+		const s = Testing.scope({ variables: [myVar] });
 		const result = Scope.findVariable(s, 'myVar');
 		expect(Option.isSome(result)).toBe(true);
 		expect(
@@ -22,7 +20,7 @@ describe('Scope.findVariable', () => {
 	});
 
 	test('returns None when variable is not in scope', () => {
-		const s = Builders.scope();
+		const s = Testing.scope();
 		const result = Scope.findVariable(s, 'notHere');
 		expect(Option.isNone(result)).toBe(true);
 	});
@@ -34,9 +32,9 @@ describe('Scope.findVariable', () => {
 
 describe('Scope.findVariableUp', () => {
 	test('finds variable in parent scope', () => {
-		const parentVar = Builders.variable('parentVar');
-		const parentScope = Builders.scope({ variables: [parentVar] });
-		const childScope = Builders.scope({ upper: parentScope });
+		const parentVar = Testing.variable('parentVar');
+		const parentScope = Testing.scope({ variables: [parentVar] });
+		const childScope = Testing.scope({ upper: parentScope });
 		const result = Scope.findVariableUp(childScope, 'parentVar');
 		expect(Option.isSome(result)).toBe(true);
 		expect(
@@ -45,10 +43,10 @@ describe('Scope.findVariableUp', () => {
 	});
 
 	test('prefers variable in current scope over parent', () => {
-		const parentVar = Builders.variable('x');
-		const childVar = Builders.variable('x');
-		const parentScope = Builders.scope({ variables: [parentVar] });
-		const childScope = Builders.scope({
+		const parentVar = Testing.variable('x');
+		const childVar = Testing.variable('x');
+		const parentScope = Testing.scope({ variables: [parentVar] });
+		const childScope = Testing.scope({
 			variables: [childVar],
 			upper: parentScope
 		});
@@ -64,8 +62,8 @@ describe('Scope.findVariableUp', () => {
 	});
 
 	test('returns None when variable not found in any scope', () => {
-		const parentScope = Builders.scope();
-		const childScope = Builders.scope({ upper: parentScope });
+		const parentScope = Testing.scope();
+		const childScope = Testing.scope({ upper: parentScope });
 		const result = Scope.findVariableUp(childScope, 'notHere');
 		expect(Option.isNone(result)).toBe(true);
 	});
@@ -77,7 +75,7 @@ describe('Scope.findVariableUp', () => {
 
 describe('Scope.isUsed', () => {
 	test('returns true when variable has read references', () => {
-		const v = Builders.variable('x', {
+		const v = Testing.variable('x', {
 			references: [
 				{
 					isRead: () => true,
@@ -92,14 +90,14 @@ describe('Scope.isUsed', () => {
 	});
 
 	test('returns false when variable has no references', () => {
-		const v = Builders.variable('x');
+		const v = Testing.variable('x');
 		expect(Scope.isUsed(v)).toBe(false);
 	});
 });
 
 describe('Scope.isWritten', () => {
 	test('returns true when variable has write references', () => {
-		const v = Builders.variable('x', {
+		const v = Testing.variable('x', {
 			references: [
 				{
 					isRead: () => false,
@@ -114,7 +112,7 @@ describe('Scope.isWritten', () => {
 	});
 
 	test('returns false when variable has only read references', () => {
-		const v = Builders.variable('x', {
+		const v = Testing.variable('x', {
 			references: [
 				{
 					isRead: () => true,
@@ -131,7 +129,7 @@ describe('Scope.isWritten', () => {
 
 describe('Scope.isReadOnly', () => {
 	test('returns true for read-only references', () => {
-		const v = Builders.variable('x', {
+		const v = Testing.variable('x', {
 			references: [
 				{
 					isRead: () => true,
@@ -166,7 +164,7 @@ describe('Scope.getReferences', () => {
 			isWriteOnly: () => true,
 			isReadWrite: () => false
 		};
-		const v = Builders.variable('x', { references: [ref1, ref2] });
+		const v = Testing.variable('x', { references: [ref1, ref2] });
 		expect(Scope.getReferences(v)).toHaveLength(2);
 	});
 });
@@ -187,7 +185,7 @@ describe('Scope.getReadReferences', () => {
 			isWriteOnly: () => true,
 			isReadWrite: () => false
 		};
-		const v = Builders.variable('x', {
+		const v = Testing.variable('x', {
 			references: [readRef, writeRef]
 		});
 		expect(Scope.getReadReferences(v)).toHaveLength(1);
@@ -210,7 +208,7 @@ describe('Scope.getWriteReferences', () => {
 			isWriteOnly: () => true,
 			isReadWrite: () => false
 		};
-		const v = Builders.variable('x', {
+		const v = Testing.variable('x', {
 			references: [readRef, writeRef]
 		});
 		expect(Scope.getWriteReferences(v)).toHaveLength(1);
@@ -223,14 +221,14 @@ describe('Scope.getWriteReferences', () => {
 
 describe('Scope.upper', () => {
 	test('returns Some when scope has a parent', () => {
-		const parent = Builders.scope();
-		const child = Builders.scope({ upper: parent });
+		const parent = Testing.scope();
+		const child = Testing.scope({ upper: parent });
 		const result = Scope.upper(child);
 		expect(Option.isSome(result)).toBe(true);
 	});
 
 	test('returns None when scope has no parent', () => {
-		const s = Builders.scope();
+		const s = Testing.scope();
 		const result = Scope.upper(s);
 		expect(Option.isNone(result)).toBe(true);
 	});
@@ -238,15 +236,15 @@ describe('Scope.upper', () => {
 
 describe('Scope.childScopes', () => {
 	test('returns child scopes', () => {
-		const s = Builders.scope();
+		const s = Testing.scope();
 		expect(Scope.childScopes(s)).toEqual([]);
 	});
 });
 
 describe('Scope.variables', () => {
 	test('returns variables in scope', () => {
-		const v = Builders.variable('x');
-		const s = Builders.scope({ variables: [v] });
+		const v = Testing.variable('x');
+		const s = Testing.scope({ variables: [v] });
 		expect(Scope.variables(s)).toHaveLength(1);
 		expect(Scope.variables(s)[0]?.name).toBe('x');
 	});
@@ -254,8 +252,8 @@ describe('Scope.variables', () => {
 
 describe('Scope.isStrict', () => {
 	test('returns strict mode flag', () => {
-		const strict = Builders.scope({ isStrict: true });
-		const nonStrict = Builders.scope({ isStrict: false });
+		const strict = Testing.scope({ isStrict: true });
+		const nonStrict = Testing.scope({ isStrict: false });
 		expect(Scope.isStrict(strict)).toBe(true);
 		expect(Scope.isStrict(nonStrict)).toBe(false);
 	});

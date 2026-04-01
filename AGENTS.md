@@ -100,12 +100,12 @@ Every source file follows this layout:
 
 - **Option for absence**: Convert nullable values with `Option.fromNullishOr` at boundaries. Chain with `Option.map`, `Option.flatMap`, `Option.match`. Never use `Option.getOrThrow`.
 - **Dual API**: Public combinators support data-first and data-last via `dual`:
-  ```ts
-  export const matchMember: {
-      (obj: string, props: string[]): (node: ESTree.Node) => Option<...>;
-      (node: ESTree.Node, obj: string, props: string[]): Option<...>;
-  } = dual(3, (node, obj, props) => { ... });
-  ```
+    ```ts
+    export const matchMember: {
+        (obj: string, props: string[]): (node: ESTree.Node) => Option<...>;
+        (node: ESTree.Node, obj: string, props: string[]): Option<...>;
+    } = dual(3, (node, obj, props) => { ... });
+    ```
 - **Effect.gen with function\***: For effectful setup and complex combinators
 - **Effect.runSync only at runtime boundaries**: The FFI bridge in `Rule.ts` and test harnesses
 - **Ref for mutable state**: `Ref.make` / `Ref.update` in effectful contexts

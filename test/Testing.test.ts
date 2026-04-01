@@ -6,33 +6,31 @@ import * as Rule from '../src/Rule.ts';
 import { RuleContext } from '../src/RuleContext.ts';
 import { make as makeDiagnostic } from '../src/Diagnostic.ts';
 
-const { Builders } = Testing;
-
 // ---------------------------------------------------------------------------
 // Builders — basic node construction
 // ---------------------------------------------------------------------------
 
 describe('Builders', () => {
 	test('id creates an Identifier node', () => {
-		const node = Builders.id('foo');
+		const node = Testing.id('foo');
 		expect(node.type).toBe('Identifier');
 		expect(node.name).toBe('foo');
 	});
 
 	test('memberExpr creates a non-computed MemberExpression', () => {
-		const node = Builders.memberExpr('a', 'b');
+		const node = Testing.memberExpr('a', 'b');
 		expect(node.type).toBe('MemberExpression');
 		expect(node.computed).toBe(false);
 	});
 
 	test('computedMemberExpr creates a computed MemberExpression', () => {
-		const node = Builders.computedMemberExpr('a', 'b');
+		const node = Testing.computedMemberExpr('a', 'b');
 		expect(node.type).toBe('MemberExpression');
 		expect(node.computed).toBe(true);
 	});
 
 	test('chainedMemberExpr creates a.b.c', () => {
-		const node = Builders.chainedMemberExpr('a', 'b', 'c');
+		const node = Testing.chainedMemberExpr('a', 'b', 'c');
 		expect(node.type).toBe('MemberExpression');
 		// The outer property should be 'c'
 		expect(node.computed).toBe(false);
@@ -40,112 +38,112 @@ describe('Builders', () => {
 	});
 
 	test('callExpr creates a bare call expression', () => {
-		const node = Builders.callExpr('foo');
+		const node = Testing.callExpr('foo');
 		expect(node.type).toBe('CallExpression');
 	});
 
 	test('callOfMember creates obj.prop(args)', () => {
-		const node = Builders.callOfMember('Effect', 'gen');
+		const node = Testing.callOfMember('Effect', 'gen');
 		expect(node.type).toBe('CallExpression');
 		expect(node.callee.type).toBe('MemberExpression');
 	});
 
 	test('importDecl creates an import declaration', () => {
-		const node = Builders.importDecl('effect');
+		const node = Testing.importDecl('effect');
 		expect(node.type).toBe('ImportDeclaration');
 		expect(node.source.value).toBe('effect');
 	});
 
 	test('strLiteral creates a string literal', () => {
-		const node = Builders.strLiteral('hello');
+		const node = Testing.strLiteral('hello');
 		expect(node.type).toBe('Literal');
 		expect(node.value).toBe('hello');
 	});
 
 	test('numLiteral creates a numeric literal', () => {
-		const node = Builders.numLiteral(42);
+		const node = Testing.numLiteral(42);
 		expect(node.type).toBe('Literal');
 		expect(node.value).toBe(42);
 	});
 
 	test('boolLiteral creates a boolean literal', () => {
-		const node = Builders.boolLiteral(true);
+		const node = Testing.boolLiteral(true);
 		expect(node.type).toBe('Literal');
 		expect(node.value).toBe(true);
 	});
 
 	test('throwStmt creates a ThrowStatement', () => {
-		const node = Builders.throwStmt();
+		const node = Testing.throwStmt();
 		expect(node.type).toBe('ThrowStatement');
 	});
 
 	test('tryStmt creates a TryStatement', () => {
-		const node = Builders.tryStmt();
+		const node = Testing.tryStmt();
 		expect(node.type).toBe('TryStatement');
 	});
 
 	test('returnStmt creates a ReturnStatement', () => {
-		const node = Builders.returnStmt();
+		const node = Testing.returnStmt();
 		expect(node.type).toBe('ReturnStatement');
 	});
 
 	test('blockStmt creates a BlockStatement', () => {
-		const node = Builders.blockStmt();
+		const node = Testing.blockStmt();
 		expect(node.type).toBe('BlockStatement');
 	});
 
 	test('arrowFn creates an ArrowFunctionExpression', () => {
-		const node = Builders.arrowFn();
+		const node = Testing.arrowFn();
 		expect(node.type).toBe('ArrowFunctionExpression');
 	});
 
 	test('varDecl creates a VariableDeclaration', () => {
-		const node = Builders.varDecl('const', 'x');
+		const node = Testing.varDecl('const', 'x');
 		expect(node.type).toBe('VariableDeclaration');
 		expect(node.kind).toBe('const');
 	});
 
 	test('exprStmt creates an ExpressionStatement', () => {
-		const expr = Builders.id('foo');
-		const node = Builders.exprStmt(expr);
+		const expr = Testing.id('foo');
+		const node = Testing.exprStmt(expr);
 		expect(node.type).toBe('ExpressionStatement');
 	});
 
 	test('program creates a Program node', () => {
-		const node = Builders.program();
+		const node = Testing.program();
 		expect(node.type).toBe('Program');
 	});
 
 	test('ifStmt creates an IfStatement', () => {
-		const node = Builders.ifStmt(
-			Builders.boolLiteral(true),
-			Builders.blockStmt()
+		const node = Testing.ifStmt(
+			Testing.boolLiteral(true),
+			Testing.blockStmt()
 		);
 		expect(node.type).toBe('IfStatement');
 	});
 
 	test('binaryExpr creates a BinaryExpression', () => {
-		const node = Builders.binaryExpr(
+		const node = Testing.binaryExpr(
 			'===',
-			Builders.id('a'),
-			Builders.numLiteral(1)
+			Testing.id('a'),
+			Testing.numLiteral(1)
 		);
 		expect(node.type).toBe('BinaryExpression');
 	});
 
 	test('newExpr creates a NewExpression', () => {
-		const node = Builders.newExpr(Builders.id('Error'));
+		const node = Testing.newExpr(Testing.id('Error'));
 		expect(node.type).toBe('NewExpression');
 	});
 
 	test('objectExpr creates an ObjectExpression', () => {
-		const node = Builders.objectExpr([{ key: 'a' }, { key: 'b' }]);
+		const node = Testing.objectExpr([{ key: 'a' }, { key: 'b' }]);
 		expect(node.type).toBe('ObjectExpression');
 		expect(node.properties).toHaveLength(2);
 	});
 
 	test('withParentChain creates linked parent chain', () => {
-		const node = Builders.withParentChain(
+		const node = Testing.withParentChain(
 			'FunctionDeclaration',
 			'BlockStatement',
 			'ThrowStatement'
@@ -156,25 +154,25 @@ describe('Builders', () => {
 	});
 
 	test('token creates a mock Token', () => {
-		const t = Builders.token('Keyword', 'const');
+		const t = Testing.token('Keyword', 'const');
 		expect(t.type).toBe('Keyword');
 		expect(t.value).toBe('const');
 	});
 
 	test('comment creates a mock Comment', () => {
-		const c = Builders.comment('Line', ' hello');
+		const c = Testing.comment('Line', ' hello');
 		expect(c.type).toBe('Line');
 		expect(c.value).toBe(' hello');
 	});
 
 	test('scope creates a mock Scope', () => {
-		const s = Builders.scope({ type: 'module', isStrict: true });
+		const s = Testing.scope({ type: 'module', isStrict: true });
 		expect(s.type).toBe('module');
 		expect(s.isStrict).toBe(true);
 	});
 
 	test('variable creates a mock Variable', () => {
-		const v = Builders.variable('myVar');
+		const v = Testing.variable('myVar');
 		expect(v.name).toBe('myVar');
 		expect(v.references).toHaveLength(0);
 	});
@@ -254,7 +252,7 @@ describe('Testing.runRule', () => {
 		const result = Testing.runRule(
 			rule,
 			'ThrowStatement',
-			Builders.throwStmt()
+			Testing.throwStmt()
 		);
 		expect(result).toHaveLength(1);
 		expect(result[0]?.diagnostic.message).toBe('No throw');
@@ -268,7 +266,7 @@ describe('Testing.runRule', () => {
 		const result = Testing.runRule(
 			rule,
 			'CallExpression',
-			Builders.callExpr('foo')
+			Testing.callExpr('foo')
 		);
 		expect(result).toHaveLength(0);
 	});
@@ -280,8 +278,8 @@ describe('Testing.runRuleMulti', () => {
 			message: 'No throw'
 		});
 		const result = Testing.runRuleMulti(rule, [
-			['ThrowStatement', Builders.throwStmt()],
-			['ThrowStatement', Builders.throwStmt()]
+			['ThrowStatement', Testing.throwStmt()],
+			['ThrowStatement', Testing.throwStmt()]
 		]);
 		expect(result).toHaveLength(2);
 	});

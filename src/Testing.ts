@@ -8,7 +8,7 @@
  * ```ts
  * import { Testing, Rule } from 'effect-oxlint'
  *
- * const result = Testing.runRule(myRule, 'ThrowStatement', Testing.Builders.throwStmt())
+ * const result = Testing.runRule(myRule, 'ThrowStatement', Testing.throwStmt())
  * Testing.expectDiagnostics(result, [{ message: 'No throw in Effect.gen' }])
  * ```
  *
@@ -44,346 +44,342 @@ import { fromOxlintContext, RuleContext } from './RuleContext.ts';
  *
  * @since 0.2.0
  */
-export namespace Builders {
-	/** Identifier: `{ type: "Identifier", name }` */
-	export const id = (name: string): ESTree.IdentifierName =>
-		({ type: 'Identifier', name }) as never;
 
-	/** MemberExpression: `obj.prop` (non-computed) */
-	export const memberExpr = (
-		obj: string,
-		prop: string
-	): ESTree.MemberExpression =>
-		({
-			type: 'MemberExpression',
-			object: id(obj),
-			property: id(prop),
-			computed: false,
-			optional: false
-		}) as never;
+/** Identifier: `{ type: "Identifier", name }` */
+export const id = (name: string): ESTree.IdentifierName =>
+	({ type: 'Identifier', name }) as never;
 
-	/** MemberExpression: `obj[prop]` (computed) */
-	export const computedMemberExpr = (
-		obj: string,
-		prop: string
-	): ESTree.MemberExpression =>
-		({
-			type: 'MemberExpression',
-			object: id(obj),
-			property: id(prop),
-			computed: true,
-			optional: false
-		}) as never;
+/** MemberExpression: `obj.prop` (non-computed) */
+export const memberExpr = (
+	obj: string,
+	prop: string
+): ESTree.MemberExpression =>
+	({
+		type: 'MemberExpression',
+		object: id(obj),
+		property: id(prop),
+		computed: false,
+		optional: false
+	}) as never;
 
-	/** Chained MemberExpression: `a.b.c` (non-computed) */
-	export const chainedMemberExpr = (
-		...names: readonly [string, string, ...ReadonlyArray<string>]
-	): ESTree.MemberExpression => {
-		const [first, second, ...rest] = names;
-		const initial = memberExpr(first, second);
-		return Arr.reduce(
-			rest,
-			initial,
-			(acc, name) =>
-				({
-					type: 'MemberExpression',
-					object: acc,
-					property: id(name),
-					computed: false,
-					optional: false
-				}) as never
-		);
-	};
+/** MemberExpression: `obj[prop]` (computed) */
+export const computedMemberExpr = (
+	obj: string,
+	prop: string
+): ESTree.MemberExpression =>
+	({
+		type: 'MemberExpression',
+		object: id(obj),
+		property: id(prop),
+		computed: true,
+		optional: false
+	}) as never;
 
-	/** CallExpression with bare identifier callee: `name(args)` */
-	export const callExpr = (
-		name: string,
-		args: ReadonlyArray<unknown> = []
-	): ESTree.CallExpression =>
-		({
-			type: 'CallExpression',
-			callee: id(name),
-			arguments: args
-		}) as never;
+/** Chained MemberExpression: `a.b.c` (non-computed) */
+export const chainedMemberExpr = (
+	...names: readonly [string, string, ...ReadonlyArray<string>]
+): ESTree.MemberExpression => {
+	const [first, second, ...rest] = names;
+	const initial = memberExpr(first, second);
+	return Arr.reduce(
+		rest,
+		initial,
+		(acc, name) =>
+			({
+				type: 'MemberExpression',
+				object: acc,
+				property: id(name),
+				computed: false,
+				optional: false
+			}) as never
+	);
+};
 
-	/** CallExpression with MemberExpression callee: `obj.prop(args)` */
-	export const callOfMember = (
-		obj: string,
-		prop: string,
-		args: ReadonlyArray<unknown> = []
-	): ESTree.CallExpression =>
-		({
-			type: 'CallExpression',
-			callee: memberExpr(obj, prop),
-			arguments: args
-		}) as never;
+/** CallExpression with bare identifier callee: `name(args)` */
+export const callExpr = (
+	name: string,
+	args: ReadonlyArray<unknown> = []
+): ESTree.CallExpression =>
+	({
+		type: 'CallExpression',
+		callee: id(name),
+		arguments: args
+	}) as never;
 
-	/** ImportDeclaration: `import ... from "source"` */
-	export const importDecl = (source: string): ESTree.ImportDeclaration =>
-		({
-			type: 'ImportDeclaration',
-			source: { type: 'Literal', value: source },
-			specifiers: []
-		}) as never;
+/** CallExpression with MemberExpression callee: `obj.prop(args)` */
+export const callOfMember = (
+	obj: string,
+	prop: string,
+	args: ReadonlyArray<unknown> = []
+): ESTree.CallExpression =>
+	({
+		type: 'CallExpression',
+		callee: memberExpr(obj, prop),
+		arguments: args
+	}) as never;
 
-	/** String literal: `{ type: "Literal", value }` */
-	export const strLiteral = (value: string): ESTree.StringLiteral =>
-		({ type: 'Literal', value }) as never;
+/** ImportDeclaration: `import ... from "source"` */
+export const importDecl = (source: string): ESTree.ImportDeclaration =>
+	({
+		type: 'ImportDeclaration',
+		source: { type: 'Literal', value: source },
+		specifiers: []
+	}) as never;
 
-	/** Numeric literal: `{ type: "Literal", value }` */
-	export const numLiteral = (value: number): ESTree.NumericLiteral =>
-		({ type: 'Literal', value }) as never;
+/** String literal: `{ type: "Literal", value }` */
+export const strLiteral = (value: string): ESTree.StringLiteral =>
+	({ type: 'Literal', value }) as never;
 
-	/** Boolean literal: `{ type: "Literal", value }` */
-	export const boolLiteral = (value: boolean): ESTree.BooleanLiteral =>
-		({ type: 'Literal', value }) as never;
+/** Numeric literal: `{ type: "Literal", value }` */
+export const numLiteral = (value: number): ESTree.NumericLiteral =>
+	({ type: 'Literal', value }) as never;
 
-	/** ObjectExpression with identifier-keyed properties */
-	export const objectExpr = (
-		properties: ReadonlyArray<{
-			readonly key: string;
-			readonly value?: unknown;
-		}>
-	): ESTree.ObjectExpression =>
-		({
-			type: 'ObjectExpression',
-			properties: properties.map((p) => ({
-				type: 'Property',
-				key: id(p.key),
-				value: p.value ?? strLiteral('')
-			}))
-		}) as never;
+/** Boolean literal: `{ type: "Literal", value }` */
+export const boolLiteral = (value: boolean): ESTree.BooleanLiteral =>
+	({ type: 'Literal', value }) as never;
 
-	/** ObjectExpression with string literal keys */
-	export const objectExprLiteralKeys = (
-		properties: ReadonlyArray<{
-			readonly key: string;
-			readonly value?: unknown;
-		}>
-	): ESTree.ObjectExpression =>
-		({
-			type: 'ObjectExpression',
-			properties: properties.map((p) => ({
-				type: 'Property',
-				key: strLiteral(p.key),
-				value: p.value ?? strLiteral('')
-			}))
-		}) as never;
+/** ObjectExpression with identifier-keyed properties */
+export const objectExpr = (
+	properties: ReadonlyArray<{
+		readonly key: string;
+		readonly value?: unknown;
+	}>
+): ESTree.ObjectExpression =>
+	({
+		type: 'ObjectExpression',
+		properties: properties.map((p) => ({
+			type: 'Property',
+			key: id(p.key),
+			value: p.value ?? strLiteral('')
+		}))
+	}) as never;
 
-	/** ObjectExpression with a SpreadElement */
-	export const objectExprWithSpread = (
-		spreadArg: unknown
-	): ESTree.ObjectExpression =>
-		({
-			type: 'ObjectExpression',
-			properties: [{ type: 'SpreadElement', argument: spreadArg }]
-		}) as never;
+/** ObjectExpression with string literal keys */
+export const objectExprLiteralKeys = (
+	properties: ReadonlyArray<{
+		readonly key: string;
+		readonly value?: unknown;
+	}>
+): ESTree.ObjectExpression =>
+	({
+		type: 'ObjectExpression',
+		properties: properties.map((p) => ({
+			type: 'Property',
+			key: strLiteral(p.key),
+			value: p.value ?? strLiteral('')
+		}))
+	}) as never;
 
-	/** ThrowStatement */
-	export const throwStmt = (): ESTree.ThrowStatement =>
-		({ type: 'ThrowStatement' }) as never;
+/** ObjectExpression with a SpreadElement */
+export const objectExprWithSpread = (
+	spreadArg: unknown
+): ESTree.ObjectExpression =>
+	({
+		type: 'ObjectExpression',
+		properties: [{ type: 'SpreadElement', argument: spreadArg }]
+	}) as never;
 
-	/** TryStatement */
-	export const tryStmt = (): ESTree.Node =>
-		({ type: 'TryStatement' }) as never;
+/** ThrowStatement */
+export const throwStmt = (): ESTree.ThrowStatement =>
+	({ type: 'ThrowStatement' }) as never;
 
-	/** ReturnStatement */
-	export const returnStmt = (argument?: unknown): ESTree.ReturnStatement =>
-		({ type: 'ReturnStatement', argument: argument ?? null }) as never;
+/** TryStatement */
+export const tryStmt = (): ESTree.Node => ({ type: 'TryStatement' }) as never;
 
-	/** BlockStatement */
-	export const blockStmt = (
-		body: ReadonlyArray<unknown> = []
-	): ESTree.BlockStatement =>
-		({ type: 'BlockStatement', body: Array.from(body) }) as never;
+/** ReturnStatement */
+export const returnStmt = (argument?: unknown): ESTree.ReturnStatement =>
+	({ type: 'ReturnStatement', argument: argument ?? null }) as never;
 
-	/** ArrowFunctionExpression */
-	export const arrowFn = (
-		body?: unknown,
-		params: ReadonlyArray<unknown> = []
-	): ESTree.ArrowFunctionExpression =>
-		({
-			type: 'ArrowFunctionExpression',
-			params: Array.from(params),
-			body: body ?? blockStmt(),
-			expression: false,
-			async: false
-		}) as never;
+/** BlockStatement */
+export const blockStmt = (
+	body: ReadonlyArray<unknown> = []
+): ESTree.BlockStatement =>
+	({ type: 'BlockStatement', body: Array.from(body) }) as never;
 
-	/** VariableDeclaration: `const/let/var name = init` */
-	export const varDecl = (
-		kind: 'const' | 'let' | 'var',
-		name: string,
-		init?: unknown
-	): ESTree.VariableDeclaration =>
-		({
-			type: 'VariableDeclaration',
-			kind,
-			declarations: [
-				{
-					type: 'VariableDeclarator',
-					id: id(name),
-					init: init ?? null
-				}
-			]
-		}) as never;
+/** ArrowFunctionExpression */
+export const arrowFn = (
+	body?: unknown,
+	params: ReadonlyArray<unknown> = []
+): ESTree.ArrowFunctionExpression =>
+	({
+		type: 'ArrowFunctionExpression',
+		params: Array.from(params),
+		body: body ?? blockStmt(),
+		expression: false,
+		async: false
+	}) as never;
 
-	/** ExpressionStatement */
-	export const exprStmt = (expression: unknown): ESTree.ExpressionStatement =>
-		({ type: 'ExpressionStatement', expression }) as never;
-
-	/** Program node */
-	export const program = (
-		body: ReadonlyArray<unknown> = []
-	): ESTree.Program =>
-		({
-			type: 'Program',
-			body: Array.from(body),
-			comments: [],
-			sourceType: 'module'
-		}) as never;
-
-	/** IfStatement */
-	export const ifStmt = (
-		test: unknown,
-		consequent: unknown,
-		alternate?: unknown
-	): ESTree.IfStatement =>
-		({
-			type: 'IfStatement',
-			test,
-			consequent,
-			alternate: alternate ?? null
-		}) as never;
-
-	/** BinaryExpression */
-	export const binaryExpr = (
-		operator: string,
-		left: unknown,
-		right: unknown
-	): ESTree.BinaryExpression =>
-		({ type: 'BinaryExpression', operator, left, right }) as never;
-
-	/** NewExpression: `new callee(args)` */
-	export const newExpr = (
-		callee: unknown,
-		args: ReadonlyArray<unknown> = []
-	): ESTree.NewExpression =>
-		({
-			type: 'NewExpression',
-			callee,
-			arguments: Array.from(args)
-		}) as never;
-
-	/** A generic AST node with type and optional parent pointer */
-	export const astNode = (
-		type: string,
-		parent?: { readonly type: string; readonly parent?: unknown }
-	): { readonly type: string; readonly parent?: unknown } => ({
-		type,
-		parent
-	});
-
-	/**
-	 * Build a parent chain from outermost → innermost.
-	 *
-	 * Returns the innermost node with `.parent` links to each ancestor.
-	 *
-	 * @example
-	 * ```ts
-	 * // Creates: FunctionDeclaration → BlockStatement → ThrowStatement
-	 * withParentChain('FunctionDeclaration', 'BlockStatement', 'ThrowStatement')
-	 * ```
-	 */
-	export const withParentChain = (
-		first: string,
-		...rest: ReadonlyArray<string>
-	): { readonly type: string; readonly parent?: unknown } =>
-		Arr.reduce(
-			rest,
-			astNode(first) satisfies {
-				readonly type: string;
-				readonly parent?: unknown;
-			},
-			(parent, type) => astNode(type, parent)
-		);
-
-	/** Mock Token */
-	export const token = (type: Token['type'], value: string): Token =>
-		({
-			type,
-			value,
-			start: 0,
-			end: value.length,
-			range: [0, value.length],
-			loc: {
-				start: { line: 1, column: 0 },
-				end: { line: 1, column: value.length }
-			},
-			regex: undefined
-		}) as never;
-
-	/** Mock Comment */
-	export const comment = (type: Comment['type'], value: string): Comment =>
-		({
-			type,
-			value,
-			start: 0,
-			end: value.length + 4,
-			range: [0, value.length + 4],
-			loc: {
-				start: { line: 1, column: 0 },
-				end: { line: 1, column: value.length + 4 }
+/** VariableDeclaration: `const/let/var name = init` */
+export const varDecl = (
+	kind: 'const' | 'let' | 'var',
+	name: string,
+	init?: unknown
+): ESTree.VariableDeclaration =>
+	({
+		type: 'VariableDeclaration',
+		kind,
+		declarations: [
+			{
+				type: 'VariableDeclarator',
+				id: id(name),
+				init: init ?? null
 			}
-		}) as never;
+		]
+	}) as never;
 
-	/** Mock Scope with minimal surface */
-	export const scope = (
-		opts: {
-			readonly type?: OxlintScope['type'];
-			readonly isStrict?: boolean;
-			readonly variables?: ReadonlyArray<Variable>;
-			readonly upper?: OxlintScope | null;
-		} = {}
-	): OxlintScope => {
-		const vars = Array.from(opts.variables ?? []);
-		const set = new Map<string, Variable>(vars.map((v) => [v.name, v]));
-		return {
-			type: opts.type ?? 'function',
-			isStrict: opts.isStrict ?? false,
-			upper: opts.upper ?? null,
-			childScopes: [],
-			variableScope: null as never,
-			block: {} as never,
-			variables: vars,
-			set,
-			references: [],
-			through: [],
-			functionExpressionScope: false
-		};
+/** ExpressionStatement */
+export const exprStmt = (expression: unknown): ESTree.ExpressionStatement =>
+	({ type: 'ExpressionStatement', expression }) as never;
+
+/** Program node */
+export const program = (body: ReadonlyArray<unknown> = []): ESTree.Program =>
+	({
+		type: 'Program',
+		body: Array.from(body),
+		comments: [],
+		sourceType: 'module'
+	}) as never;
+
+/** IfStatement */
+export const ifStmt = (
+	test: unknown,
+	consequent: unknown,
+	alternate?: unknown
+): ESTree.IfStatement =>
+	({
+		type: 'IfStatement',
+		test,
+		consequent,
+		alternate: alternate ?? null
+	}) as never;
+
+/** BinaryExpression */
+export const binaryExpr = (
+	operator: string,
+	left: unknown,
+	right: unknown
+): ESTree.BinaryExpression =>
+	({ type: 'BinaryExpression', operator, left, right }) as never;
+
+/** NewExpression: `new callee(args)` */
+export const newExpr = (
+	callee: unknown,
+	args: ReadonlyArray<unknown> = []
+): ESTree.NewExpression =>
+	({
+		type: 'NewExpression',
+		callee,
+		arguments: Array.from(args)
+	}) as never;
+
+/** A generic AST node with type and optional parent pointer */
+export const astNode = (
+	type: string,
+	parent?: { readonly type: string; readonly parent?: unknown }
+): { readonly type: string; readonly parent?: unknown } => ({
+	type,
+	parent
+});
+
+/**
+ * Build a parent chain from outermost → innermost.
+ *
+ * Returns the innermost node with `.parent` links to each ancestor.
+ *
+ * @example
+ * ```ts
+ * // Creates: FunctionDeclaration → BlockStatement → ThrowStatement
+ * withParentChain('FunctionDeclaration', 'BlockStatement', 'ThrowStatement')
+ * ```
+ */
+export const withParentChain = (
+	first: string,
+	...rest: ReadonlyArray<string>
+): { readonly type: string; readonly parent?: unknown } =>
+	Arr.reduce(
+		rest,
+		astNode(first) satisfies {
+			readonly type: string;
+			readonly parent?: unknown;
+		},
+		(parent, type) => astNode(type, parent)
+	);
+
+/** Mock Token */
+export const token = (type: Token['type'], value: string): Token =>
+	({
+		type,
+		value,
+		start: 0,
+		end: value.length,
+		range: [0, value.length],
+		loc: {
+			start: { line: 1, column: 0 },
+			end: { line: 1, column: value.length }
+		},
+		regex: undefined
+	}) as never;
+
+/** Mock Comment */
+export const comment = (type: Comment['type'], value: string): Comment =>
+	({
+		type,
+		value,
+		start: 0,
+		end: value.length + 4,
+		range: [0, value.length + 4],
+		loc: {
+			start: { line: 1, column: 0 },
+			end: { line: 1, column: value.length + 4 }
+		}
+	}) as never;
+
+/** Mock Scope with minimal surface */
+export const scope = (
+	opts: {
+		readonly type?: OxlintScope['type'];
+		readonly isStrict?: boolean;
+		readonly variables?: ReadonlyArray<Variable>;
+		readonly upper?: OxlintScope | null;
+	} = {}
+): OxlintScope => {
+	const vars = Array.from(opts.variables ?? []);
+	const set = new Map<string, Variable>(vars.map((v) => [v.name, v]));
+	return {
+		type: opts.type ?? 'function',
+		isStrict: opts.isStrict ?? false,
+		upper: opts.upper ?? null,
+		childScopes: [],
+		variableScope: null as never,
+		block: {} as never,
+		variables: vars,
+		set,
+		references: [],
+		through: [],
+		functionExpressionScope: false
 	};
+};
 
-	/** Mock Variable */
-	export const variable = (
-		name: string,
-		opts: {
-			readonly references?: ReadonlyArray<{
-				readonly isRead: () => boolean;
-				readonly isWrite: () => boolean;
-				readonly isReadOnly: () => boolean;
-				readonly isWriteOnly: () => boolean;
-				readonly isReadWrite: () => boolean;
-			}>;
-		} = {}
-	): Variable =>
-		({
-			name,
-			scope: {} as never,
-			identifiers: [id(name)],
-			references: Array.from(opts.references ?? []),
-			defs: []
-		}) as never;
-}
+/** Mock Variable */
+export const variable = (
+	name: string,
+	opts: {
+		readonly references?: ReadonlyArray<{
+			readonly isRead: () => boolean;
+			readonly isWrite: () => boolean;
+			readonly isReadOnly: () => boolean;
+			readonly isWriteOnly: () => boolean;
+			readonly isReadWrite: () => boolean;
+		}>;
+	} = {}
+): Variable =>
+	({
+		name,
+		scope: {} as never,
+		identifiers: [id(name)],
+		references: Array.from(opts.references ?? []),
+		defs: []
+	}) as never;
 
 // ---------------------------------------------------------------------------
 // Mock Context
@@ -433,7 +429,7 @@ export const createMockContext = (opts: MockContextOptions = {}) => {
 			return [];
 		},
 		getScope() {
-			return Builders.scope();
+			return scope();
 		},
 		getDeclaredVariables() {
 			return [];
