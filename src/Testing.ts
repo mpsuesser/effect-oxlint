@@ -232,11 +232,14 @@ export const exprStmt = (expression: unknown): ESTree.ExpressionStatement =>
 	({ type: 'ExpressionStatement', expression }) as never;
 
 /** Program node */
-export const program = (body: ReadonlyArray<unknown> = []): ESTree.Program =>
+export const program = (
+	body: ReadonlyArray<unknown> = [],
+	comments: ReadonlyArray<unknown> = []
+): ESTree.Program =>
 	({
 		type: 'Program',
 		body: Array.from(body),
-		comments: [],
+		comments: Array.from(comments),
 		sourceType: 'module'
 	}) as never;
 
@@ -382,6 +385,272 @@ export const variable = (
 	}) as never;
 
 // ---------------------------------------------------------------------------
+// Statement Builders
+// ---------------------------------------------------------------------------
+
+/** SwitchStatement */
+export const switchStmt = (): ESTree.SwitchStatement =>
+	({ type: 'SwitchStatement', discriminant: null, cases: [] }) as never;
+
+/** ForStatement */
+export const forStmt = (): ESTree.ForStatement =>
+	({
+		type: 'ForStatement',
+		init: null,
+		test: null,
+		update: null,
+		body: blockStmt()
+	}) as never;
+
+/** ForInStatement */
+export const forInStmt = (): ESTree.ForInStatement =>
+	({
+		type: 'ForInStatement',
+		left: id('_'),
+		right: id('_'),
+		body: blockStmt()
+	}) as never;
+
+/** ForOfStatement */
+export const forOfStmt = (): ESTree.ForOfStatement =>
+	({
+		type: 'ForOfStatement',
+		await: false,
+		left: id('_'),
+		right: id('_'),
+		body: blockStmt()
+	}) as never;
+
+/** WhileStatement */
+export const whileStmt = (): ESTree.WhileStatement =>
+	({
+		type: 'WhileStatement',
+		test: boolLiteral(true),
+		body: blockStmt()
+	}) as never;
+
+/** DoWhileStatement */
+export const doWhileStmt = (): ESTree.DoWhileStatement =>
+	({
+		type: 'DoWhileStatement',
+		test: boolLiteral(true),
+		body: blockStmt()
+	}) as never;
+
+// ---------------------------------------------------------------------------
+// Expression Builders
+// ---------------------------------------------------------------------------
+
+/** YieldExpression */
+export const yieldExpr = (
+	argument?: unknown,
+	delegate: boolean = false
+): ESTree.YieldExpression =>
+	({
+		type: 'YieldExpression',
+		argument: argument ?? null,
+		delegate
+	}) as never;
+
+/** UnaryExpression: `operator argument` */
+export const unaryExpr = (
+	operator: string,
+	argument: unknown
+): ESTree.UnaryExpression =>
+	({ type: 'UnaryExpression', operator, prefix: true, argument }) as never;
+
+// ---------------------------------------------------------------------------
+// Declaration Builders
+// ---------------------------------------------------------------------------
+
+/** VariableDeclarator (standalone, without wrapping VariableDeclaration) */
+export const varDeclarator = (
+	name: string,
+	init?: unknown
+): ESTree.VariableDeclarator =>
+	({
+		type: 'VariableDeclarator',
+		id: id(name),
+		init: init ?? null
+	}) as never;
+
+/** ExportNamedDeclaration */
+export const exportNamedDecl = (
+	declaration?: unknown
+): ESTree.ExportNamedDeclaration =>
+	({
+		type: 'ExportNamedDeclaration',
+		declaration: declaration ?? null,
+		specifiers: [],
+		source: null
+	}) as never;
+
+// ---------------------------------------------------------------------------
+// Import Specifier Builders
+// ---------------------------------------------------------------------------
+
+/** ImportDeclaration with specifiers: `import { a, b } from "source"` */
+export const importDeclWithSpecifiers = (
+	source: string,
+	specifiers: ReadonlyArray<unknown>,
+	importKind: string = 'value'
+): ESTree.ImportDeclaration =>
+	({
+		type: 'ImportDeclaration',
+		source: { type: 'Literal', value: source },
+		specifiers: Array.from(specifiers),
+		importKind
+	}) as never;
+
+/** ImportSpecifier: `{ imported as local }` */
+export const importSpecifier = (
+	imported: string,
+	local?: string,
+	importKind: string = 'value'
+): ESTree.ImportSpecifier =>
+	({
+		type: 'ImportSpecifier',
+		imported: id(imported),
+		local: id(local ?? imported),
+		importKind
+	}) as never;
+
+/** ImportNamespaceSpecifier: `* as local` */
+export const importNamespaceSpecifier = (
+	local: string
+): ESTree.ImportNamespaceSpecifier =>
+	({
+		type: 'ImportNamespaceSpecifier',
+		local: id(local)
+	}) as never;
+
+// ---------------------------------------------------------------------------
+// TypeScript Node Builders
+// ---------------------------------------------------------------------------
+
+/** TSAsExpression: `expr as Type` */
+export const tsAsExpr = (
+	typeKind: string,
+	parent?: { readonly type: string; readonly parent?: unknown }
+): ESTree.TSAsExpression =>
+	({
+		type: 'TSAsExpression',
+		expression: id('_'),
+		typeAnnotation: { type: typeKind },
+		parent
+	}) as never;
+
+/** TSUnionType: `A | B | C` */
+export const tsUnionType = (
+	typeKinds: ReadonlyArray<string>
+): ESTree.TSUnionType =>
+	({
+		type: 'TSUnionType',
+		types: Array.from(typeKinds).map((t) => ({ type: t }))
+	}) as never;
+
+/** TSTypeReference: `TypeName` */
+export const tsTypeRef = (name: string): ESTree.TSTypeReference =>
+	({
+		type: 'TSTypeReference',
+		typeName: id(name),
+		typeArguments: null
+	}) as never;
+
+/** TSTypeLiteral: `{ ... }` with N members */
+export const tsTypeLiteral = (memberCount: number): ESTree.TSTypeLiteral =>
+	({
+		type: 'TSTypeLiteral',
+		members: Array.from({ length: memberCount }, () => ({
+			type: 'TSPropertySignature'
+		}))
+	}) as never;
+
+/** TSInterfaceDeclaration: `interface Name { }` */
+export const interfaceDecl = (name: string): ESTree.TSInterfaceDeclaration =>
+	({
+		type: 'TSInterfaceDeclaration',
+		id: { type: 'BindingIdentifier', name },
+		body: { type: 'TSInterfaceBody', body: [] }
+	}) as never;
+
+/** TSTypeAliasDeclaration: `type Name = ...` */
+export const typeAliasDecl = (name: string): ESTree.TSTypeAliasDeclaration =>
+	({
+		type: 'TSTypeAliasDeclaration',
+		id: { type: 'BindingIdentifier', name },
+		typeAnnotation: null
+	}) as never;
+
+// ---------------------------------------------------------------------------
+// Class Node Builders
+// ---------------------------------------------------------------------------
+
+/**
+ * ClassDeclaration with optional superClass and body members.
+ *
+ * @example
+ * ```ts
+ * // Simple: class Foo {}
+ * classDecl('Foo')
+ *
+ * // With super: class Foo extends Bar {}
+ * classDecl('Foo', { superClass: Testing.id('Bar') })
+ *
+ * // With members: class Foo { x; static y() {} }
+ * classDecl('Foo', {
+ *     members: [Testing.propertyDef('x'), Testing.methodDef('y', true)]
+ * })
+ * ```
+ */
+export const classDecl = (
+	name: string,
+	opts: {
+		readonly superClass?: unknown;
+		readonly members?: ReadonlyArray<unknown>;
+	} = {}
+): ESTree.Class =>
+	({
+		type: 'ClassDeclaration',
+		id: { type: 'BindingIdentifier', name },
+		superClass: opts.superClass ?? null,
+		body: {
+			type: 'ClassBody',
+			body: Array.from(opts.members ?? [])
+		},
+		decorators: []
+	}) as never;
+
+/** PropertyDefinition: class field */
+export const propertyDef = (
+	name: string,
+	isStatic: boolean = false
+): ESTree.PropertyDefinition =>
+	({
+		type: 'PropertyDefinition',
+		key: id(name),
+		value: null,
+		computed: false,
+		static: isStatic,
+		decorators: []
+	}) as never;
+
+/** MethodDefinition: class method */
+export const methodDef = (
+	name: string,
+	isStatic: boolean = false
+): ESTree.MethodDefinition =>
+	({
+		type: 'MethodDefinition',
+		key: id(name),
+		kind: 'method',
+		value: arrowFn(),
+		computed: false,
+		static: isStatic,
+		decorators: []
+	}) as never;
+
+// ---------------------------------------------------------------------------
 // Mock Context
 // ---------------------------------------------------------------------------
 
@@ -396,6 +665,7 @@ export interface MockContextOptions {
 	readonly cwd?: string;
 	readonly options?: ReadonlyArray<unknown>;
 	readonly sourceText?: string;
+	readonly comments?: ReadonlyArray<Comment>;
 }
 
 /**
@@ -410,14 +680,15 @@ export const createMockContext = (opts: MockContextOptions = {}) => {
 	const filename = opts.filename ?? '/test/file.ts';
 	const cwd = opts.cwd ?? '/test';
 	const text = opts.sourceText ?? '';
+	const comments = Array.from(opts.comments ?? []);
 	const sourceCode = {
 		text,
-		ast: { type: 'Program', body: [], comments: [] },
+		ast: { type: 'Program', body: [], comments },
 		getText() {
 			return text;
 		},
 		getAllComments() {
-			return [];
+			return comments;
 		},
 		getLocFromIndex(index: number) {
 			return { line: 1, column: index };
