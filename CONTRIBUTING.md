@@ -9,7 +9,7 @@ Thanks for your interest in contributing. This guide covers everything you need 
 ## Setup
 
 ```sh
-git clone https://github.com/3thr33s/effect-oxlint.git
+git clone https://github.com/mpsuesser/effect-oxlint.git
 cd effect-oxlint
 bun install
 ```
@@ -52,4 +52,4 @@ See [AGENTS.md](./AGENTS.md) for detailed formatting, import ordering, naming co
 
 ## Reporting Issues
 
-Use the [GitHub issue templates](https://github.com/3thr33s/effect-oxlint/issues/new/choose) for bug reports and feature requests.
+Use the [GitHub issue templates](https://github.com/mpsuesser/effect-oxlint/issues/new/choose) for bug reports and feature requests.

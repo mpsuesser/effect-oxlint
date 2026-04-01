@@ -15,15 +15,15 @@
     "rules",
     "typescript"
   ],
-  "homepage": "https://github.com/3thr33s/effect-oxlint#readme",
+  "homepage": "https://github.com/mpsuesser/effect-oxlint#readme",
   "bugs": {
-    "url": "https://github.com/3thr33s/effect-oxlint/issues"
+    "url": "https://github.com/mpsuesser/effect-oxlint/issues"
   },
   "license": "MIT",
   "author": "Marc Suesser",
   "repository": {
     "type": "git",
-    "url": "https://github.com/3thr33s/effect-oxlint.git"
+    "url": "https://github.com/mpsuesser/effect-oxlint.git"
   },
   "files": [
     "src",
