@@ -1,0 +1,29 @@
+name: CI
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+
+jobs:
+    check:
+        name: Check
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: '1.3.11'
+
+            - run: bun install --frozen-lockfile
+
+            - name: Lint & format
+              run: bun run check
+
+            - name: Test
+              run: bun run test
+
+            - name: Typecheck
+              run: bun run typecheck
