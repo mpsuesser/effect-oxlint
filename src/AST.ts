@@ -382,7 +382,7 @@ export const narrow: {
 		node: ESTree.Node,
 		type: T
 	): Option.Option<ESTree.Node & { readonly type: T }> =>
-		(node as { readonly type: string }).type === type
+		node.type === type
 			? Option.some(node as ESTree.Node & { readonly type: T })
 			: Option.none()
 );
@@ -412,27 +412,36 @@ export const narrow: {
 export const memberPath = (
 	node: ESTree.MemberExpression
 ): Option.Option<Arr.NonEmptyReadonlyArray<string>> => {
-	const segments: Array<string> = [];
-	let current: ESTree.Expression | ESTree.PrivateIdentifier = node;
-	while (
-		P.isObject(current) &&
-		'type' in current &&
-		current.type === 'MemberExpression'
-	) {
-		const memberNode = current as ESTree.MemberExpression;
-		if (memberNode.computed) return Option.none();
-		const propName = identifierName(memberNode.property);
-		if (Option.isNone(propName)) return Option.none();
-		segments.unshift(propName.value);
-		current = memberNode.object;
-	}
-	return pipe(
-		identifierName(current),
-		Option.map((rootName) => {
-			segments.unshift(rootName);
-			return segments as unknown as Arr.NonEmptyReadonlyArray<string>;
-		})
-	);
+	/** @internal Collect property names from right to left. */
+	const collect = (
+		current: ESTree.Expression | ESTree.PrivateIdentifier,
+		acc: ReadonlyArray<string>
+	): Option.Option<Arr.NonEmptyReadonlyArray<string>> => {
+		if (
+			!P.isObject(current) ||
+			!('type' in current) ||
+			current.type !== 'MemberExpression'
+		) {
+			return pipe(
+				identifierName(current),
+				Option.map(
+					(rootName) =>
+						[
+							rootName,
+							...acc
+						] satisfies Arr.NonEmptyReadonlyArray<string>
+				)
+			);
+		}
+		if (current.computed) return Option.none();
+		return pipe(
+			identifierName(current.property),
+			Option.flatMap((propName) =>
+				collect(current.object, [propName, ...acc])
+			)
+		);
+	};
+	return collect(node, []);
 };
 
 // ---------------------------------------------------------------------------
@@ -458,12 +467,17 @@ export const findAncestor = (
 	node: { readonly parent?: unknown },
 	type: string
 ): Option.Option<{ readonly type: string; readonly parent?: unknown }> => {
-	let current: unknown = node.parent;
-	while (isASTShape(current)) {
+	const walk = (
+		current: unknown
+	): Option.Option<{
+		readonly type: string;
+		readonly parent?: unknown;
+	}> => {
+		if (!isASTShape(current)) return Option.none();
 		if (current.type === type) return Option.some(current);
-		current = current.parent;
-	}
-	return Option.none();
+		return walk(current.parent);
+	};
+	return walk(node.parent);
 };
 
 /**

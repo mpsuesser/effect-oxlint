@@ -1,10 +1,8 @@
-import * as path from 'node:path';
-
 import { defineConfig } from 'vite-plus';
 
 export default defineConfig({
 	test: {
-		setupFiles: [path.join(import.meta.dirname, 'vitest.setup.ts')],
+		setupFiles: [`${import.meta.dirname}/vitest.setup.ts`],
 		include: ['test/**/*.test.ts'],
 		passWithNoTests: true,
 		globals: false,
@@ -101,7 +99,7 @@ export default defineConfig({
 		},
 		overrides: [
 			{
-				files: ['**/*.{test,spec}.*'],
+				files: ['**/*.{test,spec}.*', 'src/Testing.ts'],
 				rules: {
 					'effect/avoid-untagged-errors': 'off',
 					'effect/avoid-try-catch': 'off'

@@ -157,13 +157,13 @@ export const banMember = (
 		create: function* () {
 			const ctx = yield* RuleContext;
 			return {
-				MemberExpression: (node: ESTree.Node) => {
-					const memberNode =
-						node.type === 'MemberExpression'
-							? Option.some(node as ESTree.MemberExpression)
-							: Option.none();
-					return Option.match(
-						Option.flatMap(memberNode, AST.matchMember(obj, prop)),
+				MemberExpression: (node: ESTree.Node) =>
+					Option.match(
+						AST.matchMember(
+							node as ESTree.MemberExpression,
+							obj,
+							prop
+						),
 						{
 							onNone: () => Effect.void,
 							onSome: (matched) =>
@@ -174,8 +174,7 @@ export const banMember = (
 									})
 								)
 						}
-					);
-				}
+					)
 			};
 		}
 	});
@@ -205,13 +204,12 @@ export const banImport = (
 		create: function* () {
 			const ctx = yield* RuleContext;
 			return {
-				ImportDeclaration: (node: ESTree.Node) => {
-					const importNode =
-						node.type === 'ImportDeclaration'
-							? Option.some(node as ESTree.ImportDeclaration)
-							: Option.none();
-					return Option.match(
-						Option.flatMap(importNode, AST.matchImport(source)),
+				ImportDeclaration: (node: ESTree.Node) =>
+					Option.match(
+						AST.matchImport(
+							node as ESTree.ImportDeclaration,
+							source
+						),
 						{
 							onNone: () => Effect.void,
 							onSome: (matched) =>
@@ -222,8 +220,7 @@ export const banImport = (
 									})
 								)
 						}
-					);
-				}
+					)
 			};
 		}
 	});

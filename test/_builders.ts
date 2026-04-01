@@ -26,8 +26,8 @@ import { fromOxlintContext, RuleContext } from '../src/RuleContext.ts';
 // ---------------------------------------------------------------------------
 
 /** Identifier: `{ type: "Identifier", name }` */
-export const id = (name: string) =>
-	({ type: 'Identifier', name }) as unknown as ESTree.IdentifierName;
+export const id = (name: string): ESTree.IdentifierName =>
+	({ type: 'Identifier', name }) as never;
 
 /** MemberExpression: `obj.prop` (non-computed) */
 export const memberExpr = (
@@ -87,8 +87,8 @@ export const importDecl = (source: string): ESTree.ImportDeclaration =>
 	}) as never;
 
 /** String literal: `{ type: "Literal", value }` */
-export const strLiteral = (value: string) =>
-	({ type: 'Literal', value }) as unknown as ESTree.StringLiteral;
+export const strLiteral = (value: string): ESTree.StringLiteral =>
+	({ type: 'Literal', value }) as never;
 
 /** ObjectExpression with identifier-keyed properties */
 export const objectExpr = (
@@ -165,7 +165,7 @@ export const withParentChain = (
 ): { readonly type: string; readonly parent?: unknown } =>
 	Arr.reduce(
 		rest,
-		astNode(first) as {
+		astNode(first) satisfies {
 			readonly type: string;
 			readonly parent?: unknown;
 		},

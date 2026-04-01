@@ -47,13 +47,17 @@ export const findVariableUp = (
 	scope: OxlintScope,
 	name: string
 ): Option.Option<Variable> => {
-	let current: OxlintScope | null = scope;
-	while (current !== null) {
-		const found = current.set.get(name);
-		if (found !== undefined) return Option.some(found);
-		current = current.upper;
-	}
-	return Option.none();
+	const walk = (current: OxlintScope): Option.Option<Variable> =>
+		pipe(
+			Option.fromNullishOr(current.set.get(name)),
+			Option.orElse(() =>
+				pipe(
+					Option.fromNullishOr(current.upper),
+					Option.flatMap((parent) => walk(parent))
+				)
+			)
+		);
+	return walk(scope);
 };
 
 // ---------------------------------------------------------------------------

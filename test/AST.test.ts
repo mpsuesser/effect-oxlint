@@ -404,7 +404,7 @@ describe('memberPath', () => {
 		const result = AST.memberPath(node);
 		expect(Option.isSome(result)).toBe(true);
 		expect(
-			Option.getOrElse(result, () => [] as ReadonlyArray<string>)
+			Option.getOrElse(result, (): ReadonlyArray<string> => [])
 		).toEqual(['Effect', 'gen']);
 	});
 
@@ -421,7 +421,7 @@ describe('memberPath', () => {
 		const result = AST.memberPath(abc);
 		expect(Option.isSome(result)).toBe(true);
 		expect(
-			Option.getOrElse(result, () => [] as ReadonlyArray<string>)
+			Option.getOrElse(result, (): ReadonlyArray<string> => [])
 		).toEqual(['a', 'b', 'c']);
 	});
 

@@ -46,8 +46,8 @@ import { fromOxlintContext, RuleContext } from './RuleContext.ts';
  */
 export namespace Builders {
 	/** Identifier: `{ type: "Identifier", name }` */
-	export const id = (name: string) =>
-		({ type: 'Identifier', name }) as unknown as ESTree.IdentifierName;
+	export const id = (name: string): ESTree.IdentifierName =>
+		({ type: 'Identifier', name }) as never;
 
 	/** MemberExpression: `obj.prop` (non-computed) */
 	export const memberExpr = (
@@ -127,16 +127,16 @@ export namespace Builders {
 		}) as never;
 
 	/** String literal: `{ type: "Literal", value }` */
-	export const strLiteral = (value: string) =>
-		({ type: 'Literal', value }) as unknown as ESTree.StringLiteral;
+	export const strLiteral = (value: string): ESTree.StringLiteral =>
+		({ type: 'Literal', value }) as never;
 
 	/** Numeric literal: `{ type: "Literal", value }` */
-	export const numLiteral = (value: number) =>
-		({ type: 'Literal', value }) as unknown as ESTree.NumericLiteral;
+	export const numLiteral = (value: number): ESTree.NumericLiteral =>
+		({ type: 'Literal', value }) as never;
 
 	/** Boolean literal: `{ type: "Literal", value }` */
-	export const boolLiteral = (value: boolean) =>
-		({ type: 'Literal', value }) as unknown as ESTree.BooleanLiteral;
+	export const boolLiteral = (value: boolean): ESTree.BooleanLiteral =>
+		({ type: 'Literal', value }) as never;
 
 	/** ObjectExpression with identifier-keyed properties */
 	export const objectExpr = (
@@ -301,7 +301,7 @@ export namespace Builders {
 	): { readonly type: string; readonly parent?: unknown } =>
 		Arr.reduce(
 			rest,
-			astNode(first) as {
+			astNode(first) satisfies {
 				readonly type: string;
 				readonly parent?: unknown;
 			},
@@ -347,7 +347,7 @@ export namespace Builders {
 		} = {}
 	): OxlintScope => {
 		const vars = Array.from(opts.variables ?? []);
-		const set = new Map(vars.map((v) => [v.name, v]));
+		const set = new Map<string, Variable>(vars.map((v) => [v.name, v]));
 		return {
 			type: opts.type ?? 'function',
 			isStrict: opts.isStrict ?? false,
@@ -678,16 +678,17 @@ export const expectDiagnostics = (
  */
 export const expectNoDiagnostics = (
 	result: ReadonlyArray<ReportedDiagnostic>
-): void => {
-	if (result.length > 0) {
-		throw new Error(
-			`Expected no diagnostics, got ${result.length}:\n` +
-				result
-					.map(
+): void =>
+	Arr.match(result, {
+		onEmpty: () => {},
+		onNonEmpty: (items) => {
+			throw new Error(
+				`Expected no diagnostics, got ${items.length}:\n` +
+					Arr.map(
+						items,
 						(r) =>
 							`  - ${r.diagnostic.message ?? r.diagnostic.messageId ?? '(unknown)'}`
-					)
-					.join('\n')
-		);
-	}
-};
+					).join('\n')
+			);
+		}
+	});

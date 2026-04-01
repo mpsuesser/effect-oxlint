@@ -9,7 +9,7 @@ import * as Diagnostic from '../src/Diagnostic.ts';
 
 /** Minimal mock ranged node for fix operations. */
 const rangedNode = (): Ranged => ({
-	range: [0, 10] as Range
+	range: [0, 10] satisfies Range
 });
 
 /** Minimal mock fixer that records operations. */
@@ -20,29 +20,29 @@ const createMockFixer = () => {
 		text
 	});
 	const fixer: Fixer = {
-		replaceText(nodeOrToken, text) {
+		replaceText(_nodeOrToken, text) {
 			ops.push({ op: 'replaceText', text });
 			return makeFix([0, 10], text);
 		},
 		replaceTextRange(range, text) {
 			ops.push({ op: 'replaceTextRange', text });
-			return makeFix(range as Range, text);
+			return makeFix(range, text);
 		},
-		insertTextBefore(nodeOrToken, text) {
+		insertTextBefore(_nodeOrToken, text) {
 			ops.push({ op: 'insertTextBefore', text });
 			return makeFix([0, 0], text);
 		},
 		insertTextBeforeRange(range, text) {
 			ops.push({ op: 'insertTextBeforeRange', text });
-			return makeFix([range[0], range[0]] as Range, text);
+			return makeFix([range[0], range[0]], text);
 		},
-		insertTextAfter(nodeOrToken, text) {
+		insertTextAfter(_nodeOrToken, text) {
 			ops.push({ op: 'insertTextAfter', text });
 			return makeFix([10, 10], text);
 		},
 		insertTextAfterRange(range, text) {
 			ops.push({ op: 'insertTextAfterRange', text });
-			return makeFix([range[1], range[1]] as Range, text);
+			return makeFix([range[1], range[1]], text);
 		},
 		remove(_nodeOrToken) {
 			ops.push({ op: 'remove' });
@@ -50,9 +50,9 @@ const createMockFixer = () => {
 		},
 		removeRange(range) {
 			ops.push({ op: 'removeRange' });
-			return makeFix(range as Range, '');
+			return makeFix(range, '');
 		}
-	} as Fixer;
+	};
 	return { fixer, ops };
 };
 

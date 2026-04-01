@@ -51,8 +51,8 @@ describe('Visitor.merge', () => {
 		expect(merged['CallExpression']).toBeDefined();
 	});
 
-	it.effect('sequences handlers for the same node type', () => {
-		const program = Effect.gen(function* () {
+	it.effect('sequences handlers for the same node type', () =>
+		Effect.gen(function* () {
 			const log = yield* Ref.make<ReadonlyArray<string>>([]);
 
 			const v1 = Visitor.on('ThrowStatement', () =>
@@ -70,9 +70,8 @@ describe('Visitor.merge', () => {
 
 			const result = yield* Ref.get(log);
 			expect(result).toEqual(['first', 'second']);
-		});
-		return Effect.provide(program, TestLayer);
-	});
+		}).pipe(Effect.provide(TestLayer))
+	);
 
 	it('handles empty visitor array', () => {
 		const merged = Visitor.merge();
@@ -97,8 +96,8 @@ describe('Visitor.merge', () => {
 describe('Visitor.tracked', () => {
 	it.effect(
 		'increments ref on enter and decrements on exit when predicate matches',
-		() => {
-			const program = Effect.gen(function* () {
+		() =>
+			Effect.gen(function* () {
 				const depth = yield* Ref.make(0);
 				const visitor = Visitor.tracked(
 					'CallExpression',
@@ -133,13 +132,11 @@ describe('Visitor.tracked', () => {
 					yield* exitHandler(node as never);
 				}
 				expect(yield* Ref.get(depth)).toBe(0);
-			});
-			return Effect.provide(program, TestLayer);
-		}
+			}).pipe(Effect.provide(TestLayer))
 	);
 
-	it.effect('does not change ref when predicate returns false', () => {
-		const program = Effect.gen(function* () {
+	it.effect('does not change ref when predicate returns false', () =>
+		Effect.gen(function* () {
 			const depth = yield* Ref.make(0);
 			const visitor = Visitor.tracked(
 				'CallExpression',
@@ -153,9 +150,8 @@ describe('Visitor.tracked', () => {
 				yield* enterHandler(node as never);
 			}
 			expect(yield* Ref.get(depth)).toBe(0);
-		});
-		return Effect.provide(program, TestLayer);
-	});
+		}).pipe(Effect.provide(TestLayer))
+	);
 
 	it('creates both enter and exit handlers', () => {
 		const ref = Ref.makeUnsafe(0);
@@ -219,11 +215,8 @@ describe('Visitor.accumulate', () => {
 			const visitor = yield* Visitor.accumulate<string>(
 				'ImportDeclaration',
 				(node) =>
-					(node as { type: string }).type === 'ImportDeclaration'
-						? Option.some(
-								(node as { source: { value: string } }).source
-									.value
-							)
+					node.type === 'ImportDeclaration'
+						? Option.some(node.source.value)
 						: Option.none(),
 				(items) => Ref.update(results, () => items)
 			);

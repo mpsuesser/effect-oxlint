@@ -40,7 +40,7 @@ export type EffectHandler<N = ESTree.Node> = (
  * @since 0.1.0
  */
 export type EffectVisitor = {
-	readonly [key: string]: EffectHandler | undefined;
+	readonly [key: string]: EffectHandler;
 };
 
 // ---------------------------------------------------------------------------
@@ -102,13 +102,8 @@ export const merge = (
 ): EffectVisitor =>
 	visitors.reduce<EffectVisitor>(
 		(acc, visitor) =>
-			R.union(
-				acc as Record<string, EffectHandler>,
-				pipe(
-					visitor as Record<string, EffectHandler | undefined>,
-					R.filter((h): h is EffectHandler => h !== undefined)
-				),
-				(left, right) => sequenceHandlers(left, right)
+			R.union(acc, visitor, (left, right) =>
+				sequenceHandlers(left, right)
 			),
 		{}
 	);
@@ -230,8 +225,7 @@ export const toOxlintVisitor = (
 	effectVisitor: EffectVisitor,
 	runHandler: (effect: Effect.Effect<void, never, RuleContext>) => void
 ): OxlintVisitor =>
-	pipe(
-		effectVisitor as Record<string, EffectHandler | undefined>,
-		R.filter((h): h is EffectHandler => h !== undefined),
-		R.map((handler) => (node: ESTree.Node) => runHandler(handler(node)))
+	R.map(
+		effectVisitor,
+		(handler) => (node: ESTree.Node) => runHandler(handler(node))
 	) as OxlintVisitor;

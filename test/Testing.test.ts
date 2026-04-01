@@ -1,6 +1,5 @@
 import { describe, expect, it, test } from '@effect/vitest';
 import * as Effect from 'effect/Effect';
-import * as Option from 'effect/Option';
 
 import { Testing } from '../src/index.ts';
 import * as Rule from '../src/Rule.ts';
@@ -36,9 +35,8 @@ describe('Builders', () => {
 		const node = Builders.chainedMemberExpr('a', 'b', 'c');
 		expect(node.type).toBe('MemberExpression');
 		// The outer property should be 'c'
-		if (!node.computed && 'name' in node.property) {
-			expect(node.property.name).toBe('c');
-		}
+		expect(node.computed).toBe(false);
+		expect(node.property).toHaveProperty('name', 'c');
 	});
 
 	test('callExpr creates a bare call expression', () => {
@@ -83,7 +81,7 @@ describe('Builders', () => {
 
 	test('tryStmt creates a TryStatement', () => {
 		const node = Builders.tryStmt();
-		expect((node as { type: string }).type).toBe('TryStatement');
+		expect(node.type).toBe('TryStatement');
 	});
 
 	test('returnStmt creates a ReturnStatement', () => {
@@ -154,8 +152,7 @@ describe('Builders', () => {
 		);
 		expect(node.type).toBe('ThrowStatement');
 		expect(node.parent).toBeDefined();
-		const parent = node.parent as { type: string; parent?: unknown };
-		expect(parent.type).toBe('BlockStatement');
+		expect(node.parent).toHaveProperty('type', 'BlockStatement');
 	});
 
 	test('token creates a mock Token', () => {
