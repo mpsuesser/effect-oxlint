@@ -31,6 +31,12 @@ const isIdentifier = (
 const identifierName = (node: unknown): Option.Option<string> =>
 	isIdentifier(node) ? Option.some(node.name) : Option.none();
 
+/** @internal */
+const isStaticMember = (
+	node: ESTree.MemberExpression
+): node is ESTree.StaticMemberExpression =>
+	!node.computed && node.property.type !== 'PrivateIdentifier';
+
 // ---------------------------------------------------------------------------
 // Member expression matching
 // ---------------------------------------------------------------------------
@@ -67,14 +73,14 @@ export const matchMember: {
 		obj: string,
 		prop: string | ReadonlyArray<string>
 	): Option.Option<ESTree.StaticMemberExpression> => {
-		if (node.computed) return Option.none();
+		if (!isStaticMember(node)) return Option.none();
 		const props = P.isString(prop) ? [prop] : prop;
 		return pipe(
 			identifierName(node.object),
 			Option.filter((name) => name === obj),
 			Option.flatMap(() => identifierName(node.property)),
 			Option.filter((name) => Arr.contains(props, name)),
-			Option.map(() => node as ESTree.StaticMemberExpression)
+			Option.map(() => node)
 		);
 	}
 );

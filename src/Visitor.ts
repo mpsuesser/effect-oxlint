@@ -228,4 +228,4 @@ export const toOxlintVisitor = (
 	R.map(
 		effectVisitor,
 		(handler) => (node: ESTree.Node) => runHandler(handler(node))
-	) as OxlintVisitor;
+	);

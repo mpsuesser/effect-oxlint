@@ -12,6 +12,8 @@ import * as Effect from 'effect/Effect';
 import * as Option from 'effect/Option';
 import * as Schema from 'effect/Schema';
 
+import { pipe } from 'effect/Function';
+
 import * as AST from './AST.ts';
 import { make as makeDiagnostic } from './Diagnostic.ts';
 import { fromOxlintContext, RuleContext } from './RuleContext.ts';
@@ -158,13 +160,10 @@ export const banMember = (
 			const ctx = yield* RuleContext;
 			return {
 				MemberExpression: (node: ESTree.Node) =>
-					Option.match(
-						AST.matchMember(
-							node as ESTree.MemberExpression,
-							obj,
-							prop
-						),
-						{
+					pipe(
+						AST.narrow(node, 'MemberExpression'),
+						Option.flatMap(AST.matchMember(obj, prop)),
+						Option.match({
 							onNone: () => Effect.void,
 							onSome: (matched) =>
 								ctx.report(
@@ -173,7 +172,7 @@ export const banMember = (
 										message: opts.message
 									})
 								)
-						}
+						})
 					)
 			};
 		}
@@ -205,12 +204,10 @@ export const banImport = (
 			const ctx = yield* RuleContext;
 			return {
 				ImportDeclaration: (node: ESTree.Node) =>
-					Option.match(
-						AST.matchImport(
-							node as ESTree.ImportDeclaration,
-							source
-						),
-						{
+					pipe(
+						AST.narrow(node, 'ImportDeclaration'),
+						Option.flatMap(AST.matchImport(source)),
+						Option.match({
 							onNone: () => Effect.void,
 							onSome: (matched) =>
 								ctx.report(
@@ -219,7 +216,7 @@ export const banImport = (
 										message: opts.message
 									})
 								)
-						}
+						})
 					)
 			};
 		}
