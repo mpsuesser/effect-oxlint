@@ -21,7 +21,7 @@ jobs:
               run: vp check
 
             - name: Test
-              run: vp test
+              run: bun run test
 
             - name: Typecheck
               run: bun run typecheck
