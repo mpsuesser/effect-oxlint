@@ -1,5 +1,6 @@
 import { describe, expect, it, test } from '@effect/vitest';
 import * as Effect from 'effect/Effect';
+import * as Option from 'effect/Option';
 
 import { Testing } from '../src/index.ts';
 import * as Rule from '../src/Rule.ts';
@@ -197,14 +198,16 @@ describe('Testing.newExpr', () => {
 	test('accepts a string callee and wraps it in id()', () => {
 		const node = Testing.newExpr('Date');
 		expect(node.type).toBe('NewExpression');
-		expect((node.callee as { name: string }).name).toBe('Date');
+		expect(node.callee.type).toBe('Identifier');
+		expect('name' in node.callee && node.callee.name).toBe('Date');
 	});
 
 	test('accepts a non-string callee unchanged', () => {
 		const callee = Testing.id('Map');
 		const node = Testing.newExpr(callee);
 		expect(node.type).toBe('NewExpression');
-		expect((node.callee as { name: string }).name).toBe('Map');
+		expect(node.callee.type).toBe('Identifier');
+		expect('name' in node.callee && node.callee.name).toBe('Map');
 	});
 
 	test('passes arguments through', () => {
@@ -252,7 +255,10 @@ describe('Testing.messages', () => {
 				})
 			}
 		];
-		expect(Testing.messages(result)).toEqual(['A', 'B']);
+		expect(Testing.messages(result)).toEqual([
+			Option.some('A'),
+			Option.some('B')
+		]);
 	});
 
 	test('returns empty array for no diagnostics', () => {
@@ -270,6 +276,6 @@ describe('Testing.messageIds', () => {
 				} as never
 			}
 		];
-		expect(Testing.messageIds(result)).toEqual(['noThrow']);
+		expect(Testing.messageIds(result)).toEqual([Option.some('noThrow')]);
 	});
 });

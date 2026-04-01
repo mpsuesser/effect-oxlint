@@ -130,19 +130,24 @@ export const removeFix =
 const isFix = (value: unknown): value is OxlintFix =>
 	P.isObject(value) && 'range' in value && 'text' in value;
 
-/** @internal Extract fixes from a single FixFn result. */
-const extractFixes = (
-	result:
-		| OxlintFix
-		| Array<OxlintFix | null | undefined>
-		| IterableIterator<OxlintFix | null | undefined>
-		| null
-		| undefined
-): ReadonlyArray<OxlintFix> => {
+/**
+ * Extract fixes from a single `FixFn` result.
+ *
+ * The parameter is typed as `unknown` because oxlint's `FixFn` returns
+ * a nullable union (`Fix | Array<Fix | null> | IterableIterator<…> | null`).
+ * We guard at the boundary instead of mirroring the nullable upstream type.
+ *
+ * @internal
+ */
+const extractFixes = (result: unknown): ReadonlyArray<OxlintFix> => {
 	if (result === null || result === undefined) return [];
 	if (isFix(result)) return [result];
+	if (!P.isIterable(result)) return [];
 	return Arr.filterMap(Array.from(result), (item) =>
-		Result.fromOption(Option.fromNullishOr(item), () => undefined)
+		Option.fromNullishOr(item).pipe(
+			Option.filter(isFix),
+			Result.fromOption(() => undefined)
+		)
 	);
 };
 

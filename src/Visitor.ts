@@ -35,12 +35,47 @@ export type EffectHandler<N = ESTree.Node> = (
  * A map from AST node type names (and `"NodeType:exit"` variants) to
  * effectful handlers.
  *
- * This is the Effect-first equivalent of `@oxlint/plugins`' `Visitor`.
+ * This is the internal representation — handlers accept `ESTree.Node`.
  *
  * @since 0.1.0
  */
 export type EffectVisitor = {
 	readonly [key: string]: EffectHandler;
+};
+
+/** @internal Extract the node parameter type from an oxlint visitor handler. */
+type ExtractNode<H> = H extends
+	| ((node: infer N) => unknown)
+	| { bivarianceHack(node: infer N): void }
+	? N
+	: ESTree.Node;
+
+/**
+ * Resolve a visitor key to its narrowed node type.
+ *
+ * For known keys (e.g. `'CallExpression'`), returns the specific
+ * ESTree node type. For unknown keys, falls back to `ESTree.Node`.
+ *
+ * @since 0.2.0
+ */
+export type VisitorNodeType<K extends string> = K extends keyof OxlintVisitor
+	? ExtractNode<Exclude<OxlintVisitor[K], undefined>>
+	: ESTree.Node;
+
+/**
+ * Typed visitor map where known oxlint visitor keys provide the
+ * correctly narrowed node type to handlers (e.g. `MemberExpression`
+ * handlers receive `ESTree.MemberExpression`).
+ *
+ * Return this from `Rule.define`'s `create` generator. Callers get
+ * typed nodes in their handlers without manual narrowing.
+ *
+ * @since 0.2.0
+ */
+export type TypedEffectVisitor = {
+	readonly [K in keyof OxlintVisitor]?: EffectHandler<
+		ExtractNode<Exclude<OxlintVisitor[K], undefined>>
+	>;
 };
 
 // ---------------------------------------------------------------------------
@@ -66,8 +101,8 @@ export type EffectVisitor = {
  */
 export const on = <K extends string>(
 	nodeType: K,
-	handler: EffectHandler
-): EffectVisitor => ({ [nodeType]: handler });
+	handler: EffectHandler<VisitorNodeType<K>>
+): EffectVisitor => ({ [nodeType]: handler as EffectHandler });
 
 /**
  * Create a single-entry visitor for the exit phase of a node type.
@@ -76,8 +111,8 @@ export const on = <K extends string>(
  */
 export const onExit = <K extends string>(
 	nodeType: K,
-	handler: EffectHandler
-): EffectVisitor => ({ [`${nodeType}:exit`]: handler });
+	handler: EffectHandler<VisitorNodeType<K>>
+): EffectVisitor => ({ [`${nodeType}:exit`]: handler as EffectHandler });
 
 // ---------------------------------------------------------------------------
 // Combinators
@@ -114,22 +149,14 @@ export const merge = (
  *
  * This replaces the common `let depth = 0` mutable counter pattern.
  *
- * The type parameter `N` narrows the node type the predicate receives.
- * By default it is `ESTree.Node`, but callers can supply a narrower
- * type to avoid manual casts inside the predicate.
+ * The predicate receives the narrowed node type for the given key
+ * (e.g. `ESTree.CallExpression` for `'CallExpression'`).
  *
  * @example
  * ```ts
  * const effectGenDepth = yield* Ref.make(0)
  *
- * // Predicate receives ESTree.Node (default)
  * Visitor.tracked('CallExpression',
- *   (node) => AST.isCallOf(node, 'Effect', 'gen'),
- *   effectGenDepth
- * )
- *
- * // Predicate receives narrowed CallExpression
- * Visitor.tracked<ESTree.CallExpression>('CallExpression',
  *   (node) => AST.isCallOf(node, 'Effect', 'gen'),
  *   effectGenDepth
  * )
@@ -137,15 +164,19 @@ export const merge = (
  *
  * @since 0.1.0
  */
-export const tracked = <N extends ESTree.Node = ESTree.Node>(
-	nodeType: string,
-	predicate: (node: N) => boolean,
+export const tracked = <K extends string>(
+	nodeType: K,
+	predicate: (node: VisitorNodeType<K>) => boolean,
 	ref: Ref.Ref<number>
 ): EffectVisitor => ({
 	[nodeType]: (node: ESTree.Node) =>
-		predicate(node as N) ? Ref.update(ref, (n) => n + 1) : Effect.void,
+		predicate(node as VisitorNodeType<K>)
+			? Ref.update(ref, (n) => n + 1)
+			: Effect.void,
 	[`${nodeType}:exit`]: (node: ESTree.Node) =>
-		predicate(node as N) ? Ref.update(ref, (n) => n - 1) : Effect.void
+		predicate(node as VisitorNodeType<K>)
+			? Ref.update(ref, (n) => n - 1)
+			: Effect.void
 });
 
 /**

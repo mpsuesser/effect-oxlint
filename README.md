@@ -20,7 +20,7 @@ Write [oxlint](https://oxc.rs/docs/guide/usage/linter) custom lint rules with [E
 bun add effect-oxlint effect@4.0.0-beta.43
 ```
 
-`effect-oxlint` has two peer dependencies:
+`effect-oxlint` depends on:
 
 | Package           | Version         |
 | ----------------- | --------------- |
@@ -34,7 +34,7 @@ bun add effect-oxlint effect@4.0.0-beta.43
 ```ts
 import * as Effect from 'effect/Effect';
 import * as Option from 'effect/Option';
-import { AST, Diagnostic, Rule, RuleContext, Visitor } from 'effect-oxlint';
+import { AST, Diagnostic, Rule, RuleContext } from 'effect-oxlint';
 
 const noJsonParse = Rule.define({
 	name: 'no-json-parse',
@@ -45,6 +45,7 @@ const noJsonParse = Rule.define({
 	create: function* () {
 		const ctx = yield* RuleContext;
 		return {
+			// node is typed as ESTree.MemberExpression automatically
 			MemberExpression: (node) =>
 				Option.match(
 					AST.matchMember(node, 'JSON', ['parse', 'stringify']),
@@ -156,9 +157,10 @@ Replace mutable `let depth = 0` counters with `Visitor.tracked`:
 import * as Ref from 'effect/Ref';
 import { AST, Visitor } from 'effect-oxlint';
 
-const depthRef = yield * Ref.make(0);
+const depthRef = yield* Ref.make(0);
 const tracker = Visitor.tracked(
 	'CallExpression',
+	// node is typed as ESTree.CallExpression
 	(node) => AST.isCallOf(node, 'Effect', 'gen'),
 	depthRef
 );
@@ -172,15 +174,13 @@ Collect data during traversal, then analyze at `Program:exit`:
 ```ts
 import { Visitor, AST } from 'effect-oxlint';
 
-const visitor =
-	yield *
-	Visitor.accumulate(
-		'ExportNamedDeclaration',
-		(node) => AST.narrow(node, 'ExportNamedDeclaration'),
-		function* (exports) {
-			// all exports collected — analyze them here
-		}
-	);
+const visitor = yield* Visitor.accumulate(
+	'ExportNamedDeclaration',
+	(node) => AST.narrow(node, 'ExportNamedDeclaration'),
+	function* (exports) {
+		// all exports collected — analyze them here
+	}
+);
 ```
 
 ### Filter by filename
@@ -190,9 +190,10 @@ Restrict a visitor to specific files:
 ```ts
 import { Visitor } from 'effect-oxlint';
 
-const visitor =
-	yield *
-	Visitor.filter((filename) => !filename.endsWith('.test.ts'), mainVisitor);
+const visitor = yield* Visitor.filter(
+	(filename) => !filename.endsWith('.test.ts'),
+	mainVisitor
+);
 ```
 
 ## AST Matching
@@ -202,25 +203,29 @@ Every matcher returns `Option` for safe composition with `pipe`, `Option.map`, a
 ```ts
 import { pipe } from 'effect';
 import * as Option from 'effect/Option';
+import type { ESTree } from 'effect-oxlint';
 import { AST } from 'effect-oxlint';
 
-// Data-first
-AST.matchMember(node, 'JSON', ['parse', 'stringify']);
+// Data-first (pass a MemberExpression directly)
+declare const memberNode: ESTree.MemberExpression;
+AST.matchMember(memberNode, 'JSON', ['parse', 'stringify']);
 
 // Data-last (pipe-friendly)
-pipe(node, AST.matchMember('Effect', 'gen'));
+pipe(memberNode, AST.matchMember('Effect', 'gen'));
 
-// Chain matchers
+// Chain: narrow an ESTree.Node, then match
+declare const node: ESTree.Node;
 pipe(
 	AST.narrow(node, 'CallExpression'),
 	Option.flatMap(AST.matchCallOf('Effect', 'gen'))
 );
 
 // Extract member path: a.b.c -> Some(['a', 'b', 'c'])
-AST.memberPath(node);
+AST.memberPath(memberNode);
 
 // Match imports by string or predicate
-AST.matchImport(node, (src) => src.startsWith('node:'));
+declare const importNode: ESTree.ImportDeclaration;
+AST.matchImport(importNode, (src) => src.startsWith('node:'));
 ```
 
 ## Diagnostics and Autofixes
@@ -261,6 +266,7 @@ const node: ESTree.CallExpression = /* ... */;
 
 ```ts
 import { describe, expect, test } from '@effect/vitest';
+import * as Option from 'effect/Option';
 import { Rule, Testing } from 'effect-oxlint';
 
 describe('no-json-parse', () => {
@@ -271,8 +277,10 @@ describe('no-json-parse', () => {
 			Testing.memberExpr('JSON', 'parse')
 		);
 		Testing.expectDiagnostics(result, [{ message: 'Use Schema for JSON' }]);
-		// Or use the messages() helper for quick access
-		expect(Testing.messages(result)).toEqual(['Use Schema for JSON']);
+		// Or use the messages() helper — returns Option per diagnostic
+		expect(Testing.messages(result)).toEqual([
+			Option.some('Use Schema for JSON')
+		]);
 	});
 
 	test('ignores other member expressions', () => {

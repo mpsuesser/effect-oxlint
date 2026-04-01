@@ -1,6 +1,7 @@
 import { describe, expect, test } from '@effect/vitest';
 import * as Arr from 'effect/Array';
 import * as Effect from 'effect/Effect';
+import * as Option from 'effect/Option';
 
 import * as Rule from '../src/Rule.ts';
 import { Testing } from '../src/index.ts';
@@ -260,7 +261,9 @@ describe('Rule.banCallOf', () => {
 			Testing.callExpr('fetch')
 		);
 		expect(Arr.length(result)).toBe(1);
-		expect(Testing.messages(result)).toEqual(['Use Effect HTTP client']);
+		expect(Testing.messages(result)).toEqual([
+			Option.some('Use Effect HTTP client')
+		]);
 	});
 
 	test('reports for multiple banned names', () => {
@@ -335,7 +338,9 @@ describe('Rule.banNewExpr', () => {
 			Testing.newExpr('Date')
 		);
 		expect(Arr.length(result)).toBe(1);
-		expect(Testing.messages(result)).toEqual(['Use Clock service']);
+		expect(Testing.messages(result)).toEqual([
+			Option.some('Use Clock service')
+		]);
 	});
 
 	test('reports for multiple banned constructors', () => {

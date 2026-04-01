@@ -28,6 +28,7 @@ import type {
 import * as Arr from 'effect/Array';
 import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
+import * as Option from 'effect/Option';
 import * as P from 'effect/Predicate';
 
 import { fromOxlintContext, RuleContext } from './RuleContext.ts';
@@ -901,31 +902,36 @@ export const runRuleMulti = (
 /**
  * Extract the diagnostic messages from a result array.
  *
- * Shorthand for `result.map(r => r.diagnostic.message)`, returning
- * `undefined` when a diagnostic uses `messageId` instead of `message`.
+ * Returns `Option.none()` when a diagnostic uses `messageId` instead
+ * of `message`, or when the message is `null`.
  *
  * @example
  * ```ts
+ * import * as Option from 'effect/Option'
+ *
  * const result = Testing.runRule(rule, 'ThrowStatement', Testing.throwStmt())
- * expect(Testing.messages(result)).toEqual(['Use Effect.fail instead'])
+ * expect(Testing.messages(result)).toEqual([Option.some('Use Effect.fail instead')])
  * ```
  *
  * @since 0.2.0
  */
 export const messages = (
 	result: ReadonlyArray<ReportedDiagnostic>
-): ReadonlyArray<string | null | undefined> =>
-	Arr.map(result, (r) => r.diagnostic.message);
+): ReadonlyArray<Option.Option<string>> =>
+	Arr.map(result, (r) => Option.fromNullishOr(r.diagnostic.message));
 
 /**
  * Extract the diagnostic messageIds from a result array.
+ *
+ * Returns `Option.none()` when a diagnostic uses `message` instead
+ * of `messageId`, or when the messageId is `null`.
  *
  * @since 0.2.0
  */
 export const messageIds = (
 	result: ReadonlyArray<ReportedDiagnostic>
-): ReadonlyArray<string | null | undefined> =>
-	Arr.map(result, (r) => r.diagnostic.messageId);
+): ReadonlyArray<Option.Option<string>> =>
+	Arr.map(result, (r) => Option.fromNullishOr(r.diagnostic.messageId));
 
 // ---------------------------------------------------------------------------
 // Assertion Helpers

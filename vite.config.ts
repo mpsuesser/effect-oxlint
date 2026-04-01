@@ -29,6 +29,12 @@ export default defineConfig({
 					useTabs: false,
 					tabWidth: 2
 				}
+			},
+			{
+				files: ['*.md'],
+				options: {
+					embeddedLanguageFormatting: 'off'
+				}
 			}
 		]
 	},
@@ -103,6 +109,23 @@ export default defineConfig({
 				rules: {
 					'effect/avoid-untagged-errors': 'off',
 					'effect/avoid-try-catch': 'off'
+				}
+			},
+			{
+				// FFI boundary modules wrapping oxlint's types — nullable
+				// params, Map, and casts are dictated by upstream types.
+				files: [
+					'src/SourceCode.ts',
+					'src/Testing.ts',
+					'src/Rule.ts',
+					'src/Visitor.ts'
+				],
+				rules: {
+					'effect/prefer-option-over-null': 'off',
+					'effect/casting-awareness': 'off',
+					'effect/avoid-any': 'off',
+					'effect/avoid-native-object-helpers': 'off',
+					'effect/effect-run-in-body': 'off'
 				}
 			}
 		],

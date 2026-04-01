@@ -374,6 +374,12 @@ export const objectGetValue: {
  *
  * @since 0.2.0
  */
+/** @internal Type guard: does the node's `type` match the literal? */
+const hasType = <T extends string>(
+	node: ESTree.Node,
+	type: T
+): node is ESTree.Node & { readonly type: T } => node.type === type;
+
 export const narrow: {
 	<T extends string>(
 		type: T
@@ -388,9 +394,7 @@ export const narrow: {
 		node: ESTree.Node,
 		type: T
 	): Option.Option<ESTree.Node & { readonly type: T }> =>
-		node.type === type
-			? Option.some(node as ESTree.Node & { readonly type: T })
-			: Option.none()
+		hasType(node, type) ? Option.some(node) : Option.none()
 );
 
 // ---------------------------------------------------------------------------

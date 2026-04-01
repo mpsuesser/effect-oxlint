@@ -40,14 +40,32 @@ const withSourceCode = <A>(
 /**
  * Get the source text for a node, optionally with surrounding characters.
  *
+ * When called with no arguments, returns the entire source text.
+ * Pass an `Option<ESTree.Node>` to get text for a specific node.
+ *
  * @since 0.2.0
  */
-export const getText = (
-	node?: ESTree.Node | null,
+export const getText: {
+	(): Effect.Effect<string, never, RuleContext>;
+	(
+		node: Option.Option<ESTree.Node>,
+		beforeCount?: number,
+		afterCount?: number
+	): Effect.Effect<string, never, RuleContext>;
+} = (
+	node?: Option.Option<ESTree.Node>,
 	beforeCount?: number,
 	afterCount?: number
 ): Effect.Effect<string, never, RuleContext> =>
-	withSourceCode((sc) => sc.getText(node ?? null, beforeCount, afterCount));
+	withSourceCode((sc) =>
+		sc.getText(
+			node === undefined
+				? null
+				: Option.getOrElse(node, () => null as never),
+			beforeCount,
+			afterCount
+		)
+	);
 
 // ---------------------------------------------------------------------------
 // Ancestry
@@ -56,8 +74,9 @@ export const getText = (
 /**
  * Get the ancestor nodes of the given node, from innermost to outermost.
  *
- * Note: oxlint returns base `Node` (Span) types — these are `ESTree.Node`
- * values at runtime but typed as the less specific base interface.
+ * Note: oxlint types `getAncestors` as returning `Node[]` where `Node`
+ * is the base `Span` interface. At runtime these are full `ESTree.Node`
+ * values — the cast bridges this upstream type gap at the FFI boundary.
  *
  * @since 0.2.0
  */
@@ -65,6 +84,9 @@ export const getAncestors = (
 	node: ESTree.Node
 ): Effect.Effect<ReadonlyArray<ESTree.Node>, never, RuleContext> =>
 	withSourceCode(
+		// oxlint-ignore(casting-awareness,avoid-any): FFI boundary —
+		// oxlint's `Node` (Span) is structurally narrower than `ESTree.Node`
+		// but the runtime values are full ESTree nodes.
 		(sc) => sc.getAncestors(node) as unknown as ReadonlyArray<ESTree.Node>
 	);
 

@@ -19,7 +19,7 @@ import { pipe } from 'effect/Function';
 import * as AST from './AST.ts';
 import { make as makeDiagnostic } from './Diagnostic.ts';
 import { fromOxlintContext, RuleContext } from './RuleContext.ts';
-import type { EffectVisitor } from './Visitor.ts';
+import type { EffectVisitor, TypedEffectVisitor } from './Visitor.ts';
 import { merge as mergeVisitors, toOxlintVisitor } from './Visitor.ts';
 
 // ---------------------------------------------------------------------------
@@ -48,7 +48,7 @@ const newExprCalleeName = (callee: ESTree.Expression): Option.Option<string> =>
  *
  * @since 0.1.0
  */
-export interface RuleConfig<Options = void> {
+export interface RuleConfig<Options = undefined> {
 	/** Rule name (used for tracing spans). */
 	readonly name: string;
 	/** Oxlint rule metadata. */
@@ -71,7 +71,7 @@ export interface RuleConfig<Options = void> {
 	 */
 	readonly create: (
 		options: Options
-	) => Effect.gen.Return<EffectVisitor, never, RuleContext>;
+	) => Effect.gen.Return<TypedEffectVisitor, never, RuleContext>;
 }
 
 // ---------------------------------------------------------------------------
@@ -91,7 +91,7 @@ export interface RuleConfig<Options = void> {
  *
  * @since 0.1.0
  */
-export const define = <Options = void>(
+export const define = <Options = undefined>(
 	config: RuleConfig<Options>
 ): CreateRule => ({
 	meta: config.meta,
@@ -103,7 +103,8 @@ export const define = <Options = void>(
 		const run = <A>(effect: Effect.Effect<A, never, RuleContext>): A =>
 			Effect.runSync(Effect.provideService(effect, RuleContext, ruleCtx));
 
-		// Decode options from the raw JSON array
+		// Decode options from the raw JSON array.
+		// When no schema is configured, `Options` defaults to `undefined`.
 		const decodeOptions = (): Options => {
 			const schema = config.options;
 			if (schema === undefined) return undefined as Options;
@@ -111,8 +112,14 @@ export const define = <Options = void>(
 		};
 		const options = run(Effect.sync(decodeOptions));
 
-		// Run the create generator to set up Refs and get the visitor map
-		const effectVisitor = run(Effect.gen(() => config.create(options)));
+		// Run the create generator to set up Refs and get the visitor map.
+		// TypedEffectVisitor → EffectVisitor: the typed keys provide
+		// narrowed nodes to callers, but at runtime all handlers receive
+		// the same ESTree.Node values. The variance mismatch is safe
+		// because oxlint guarantees the node type matches the key.
+		const effectVisitor = run(
+			Effect.gen(() => config.create(options))
+		) as EffectVisitor;
 
 		// Wrap each handler: Effect<void> → plain () => void
 		return toOxlintVisitor(effectVisitor, run);
