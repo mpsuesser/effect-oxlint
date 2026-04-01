@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@effect/vitest';
+import { describe, expect, it, test } from '@effect/vitest';
 import * as Effect from 'effect/Effect';
 import * as Option from 'effect/Option';
 import * as R from 'effect/Record';
@@ -19,7 +19,7 @@ const TestLayer = Testing.mockRuleContextLayer();
 // ---------------------------------------------------------------------------
 
 describe('Visitor.on', () => {
-	it('creates a visitor with the given node type key', () => {
+	test('creates a visitor with the given node type key', () => {
 		const visitor = Visitor.on('ThrowStatement', () => Effect.void);
 		expect(visitor['ThrowStatement']).toBeDefined();
 		expect(visitor['ThrowStatement:exit']).toBeUndefined();
@@ -31,7 +31,7 @@ describe('Visitor.on', () => {
 // ---------------------------------------------------------------------------
 
 describe('Visitor.onExit', () => {
-	it('creates a visitor with the exit key', () => {
+	test('creates a visitor with the exit key', () => {
 		const visitor = Visitor.onExit('CallExpression', () => Effect.void);
 		expect(visitor['CallExpression:exit']).toBeDefined();
 		expect(visitor['CallExpression']).toBeUndefined();
@@ -43,7 +43,7 @@ describe('Visitor.onExit', () => {
 // ---------------------------------------------------------------------------
 
 describe('Visitor.merge', () => {
-	it('combines visitors for different node types', () => {
+	test('combines visitors for different node types', () => {
 		const v1 = Visitor.on('ThrowStatement', () => Effect.void);
 		const v2 = Visitor.on('CallExpression', () => Effect.void);
 		const merged = Visitor.merge(v1, v2);
@@ -73,12 +73,12 @@ describe('Visitor.merge', () => {
 		}).pipe(Effect.provide(TestLayer))
 	);
 
-	it('handles empty visitor array', () => {
+	test('handles empty visitor array', () => {
 		const merged = Visitor.merge();
 		expect(R.keys(merged)).toHaveLength(0);
 	});
 
-	it('merges three or more visitors', () => {
+	test('merges three or more visitors', () => {
 		const v1 = Visitor.on('A', () => Effect.void);
 		const v2 = Visitor.on('B', () => Effect.void);
 		const v3 = Visitor.on('C', () => Effect.void);
@@ -153,7 +153,7 @@ describe('Visitor.tracked', () => {
 		}).pipe(Effect.provide(TestLayer))
 	);
 
-	it('creates both enter and exit handlers', () => {
+	test('creates both enter and exit handlers', () => {
 		const ref = Ref.makeUnsafe(0);
 		const visitor = Visitor.tracked('CallExpression', () => true, ref);
 		expect(visitor['CallExpression']).toBeDefined();

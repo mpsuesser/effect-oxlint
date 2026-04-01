@@ -2,8 +2,13 @@ import { describe, expect, test } from '@effect/vitest';
 import * as Arr from 'effect/Array';
 import * as Effect from 'effect/Effect';
 import * as Option from 'effect/Option';
+import * as Ref from 'effect/Ref';
+import * as Schema from 'effect/Schema';
 
+import { make as makeDiagnostic } from '../src/Diagnostic.ts';
 import * as Rule from '../src/Rule.ts';
+import { RuleContext } from '../src/RuleContext.ts';
+import * as Visitor from '../src/Visitor.ts';
 import { Testing } from '../src/index.ts';
 
 // ---------------------------------------------------------------------------
@@ -504,5 +509,103 @@ describe('Rule.banMultiple', () => {
 			{ name: 'my-custom-rule', message: 'msg' }
 		);
 		expect(rule.meta?.type).toBe('suggestion');
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Rule.define — options schema decoding
+// ---------------------------------------------------------------------------
+
+describe('Rule.define with options', () => {
+	test('decodes options via Schema at create time', () => {
+		class RuleOptions extends Schema.Class<RuleOptions>('RuleOptions')({
+			strict: Schema.Boolean
+		}) {}
+		const rule = Rule.define({
+			name: 'options-test',
+			meta: Rule.meta({
+				type: 'suggestion',
+				description: 'Test with options'
+			}),
+			options: RuleOptions,
+			create: function* (options) {
+				const ctx = yield* RuleContext;
+				return Visitor.on('ThrowStatement', (node) =>
+					options.strict
+						? ctx.report(
+								makeDiagnostic({
+									node,
+									message: `strict=${options.strict}`
+								})
+							)
+						: Effect.void
+				);
+			}
+		});
+		const result = Testing.runRule(
+			rule,
+			'ThrowStatement',
+			Testing.throwStmt(),
+			{ options: [{ strict: true }] }
+		);
+		expect(Arr.length(result)).toBe(1);
+		expect(result[0]?.diagnostic.message).toBe('strict=true');
+	});
+
+	test('options default to undefined when no schema provided', () => {
+		const rule = Rule.define({
+			name: 'no-options',
+			meta: Rule.meta({
+				type: 'suggestion',
+				description: 'No options'
+			}),
+			create: function* () {
+				const ctx = yield* RuleContext;
+				return Visitor.on('ThrowStatement', (node) =>
+					ctx.report(makeDiagnostic({ node, message: 'reported' }))
+				);
+			}
+		});
+		const result = Testing.runRule(
+			rule,
+			'ThrowStatement',
+			Testing.throwStmt()
+		);
+		expect(Arr.length(result)).toBe(1);
+	});
+
+	test('rule with Ref state persists across visitor calls', () => {
+		const rule = Rule.define({
+			name: 'stateful-rule',
+			meta: Rule.meta({
+				type: 'problem',
+				description: 'Stateful test'
+			}),
+			create: function* () {
+				const ctx = yield* RuleContext;
+				const count = yield* Ref.make(0);
+				return Visitor.on('ThrowStatement', (node) =>
+					Effect.gen(function* () {
+						yield* Ref.update(count, (n) => n + 1);
+						const current = yield* Ref.get(count);
+						if (current >= 2) {
+							yield* ctx.report(
+								makeDiagnostic({
+									node,
+									message: `count=${current}`
+								})
+							);
+						}
+					})
+				);
+			}
+		});
+		const result = Testing.runRuleMulti(rule, [
+			['ThrowStatement', Testing.throwStmt()],
+			['ThrowStatement', Testing.throwStmt()],
+			['ThrowStatement', Testing.throwStmt()]
+		]);
+		// Only the 2nd and 3rd calls trigger (count >= 2)
+		expect(Arr.length(result)).toBe(2);
 	});
 });

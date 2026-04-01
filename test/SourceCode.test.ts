@@ -201,3 +201,109 @@ describe('SourceCode.getLines', () => {
 		}).pipe(Effect.provide(TestLayer))
 	);
 });
+
+// ---------------------------------------------------------------------------
+// Additional coverage — previously untested exports
+// ---------------------------------------------------------------------------
+
+describe('SourceCode.getAncestors', () => {
+	it.effect('returns empty ancestors from mock', () =>
+		Effect.gen(function* () {
+			const node = { type: 'Identifier', name: 'x' } as never;
+			const result = yield* SourceCode.getAncestors(node);
+			expect(result).toEqual([]);
+		}).pipe(Effect.provide(TestLayer))
+	);
+});
+
+describe('SourceCode.getIndexFromLoc', () => {
+	it.effect('converts line/column to offset', () =>
+		Effect.gen(function* () {
+			const idx = yield* SourceCode.getIndexFromLoc({
+				line: 1,
+				column: 5
+			});
+			expect(idx).toBe(5);
+		}).pipe(Effect.provide(TestLayer))
+	);
+});
+
+describe('SourceCode.getRange', () => {
+	it.effect('returns range from mock', () =>
+		Effect.gen(function* () {
+			const node = { type: 'Program', body: [] } as never;
+			const result = yield* SourceCode.getRange(node);
+			expect(result).toEqual([0, 0]);
+		}).pipe(Effect.provide(TestLayer))
+	);
+});
+
+describe('SourceCode.getTokens', () => {
+	it.effect('returns empty tokens from mock', () =>
+		Effect.gen(function* () {
+			const node = { type: 'Program', body: [] } as never;
+			const result = yield* SourceCode.getTokens(node);
+			expect(result).toEqual([]);
+		}).pipe(Effect.provide(TestLayer))
+	);
+});
+
+describe('SourceCode.getTokensBetween', () => {
+	it.effect('returns empty array from mock', () =>
+		Effect.gen(function* () {
+			const a = { type: 'Program', body: [] } as never;
+			const b = { type: 'Program', body: [] } as never;
+			const result = yield* SourceCode.getTokensBetween(a, b);
+			expect(result).toEqual([]);
+		}).pipe(Effect.provide(TestLayer))
+	);
+});
+
+describe('SourceCode.getFirstTokenBetween', () => {
+	it.effect('returns None from mock', () =>
+		Effect.gen(function* () {
+			const a = { type: 'Program', body: [] } as never;
+			const b = { type: 'Program', body: [] } as never;
+			const result = yield* SourceCode.getFirstTokenBetween(a, b);
+			expect(Option.isNone(result)).toBe(true);
+		}).pipe(Effect.provide(TestLayer))
+	);
+});
+
+describe('SourceCode.getTokenByRangeStart', () => {
+	it.effect('returns None from mock', () =>
+		Effect.gen(function* () {
+			const result = yield* SourceCode.getTokenByRangeStart(0);
+			expect(Option.isNone(result)).toBe(true);
+		}).pipe(Effect.provide(TestLayer))
+	);
+});
+
+describe('SourceCode.getCommentsAfter', () => {
+	it.effect('returns empty array from mock', () =>
+		Effect.gen(function* () {
+			const node = { type: 'Program', body: [] } as never;
+			const result = yield* SourceCode.getCommentsAfter(node);
+			expect(result).toEqual([]);
+		}).pipe(Effect.provide(TestLayer))
+	);
+});
+
+describe('SourceCode.getCommentsInside', () => {
+	it.effect('returns empty array from mock', () =>
+		Effect.gen(function* () {
+			const node = { type: 'Program', body: [] } as never;
+			const result = yield* SourceCode.getCommentsInside(node);
+			expect(result).toEqual([]);
+		}).pipe(Effect.provide(TestLayer))
+	);
+});
+
+describe('SourceCode.markVariableAsUsed', () => {
+	it.effect('returns false from mock', () =>
+		Effect.gen(function* () {
+			const result = yield* SourceCode.markVariableAsUsed('x');
+			expect(result).toBe(false);
+		}).pipe(Effect.provide(TestLayer))
+	);
+});

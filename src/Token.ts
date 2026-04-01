@@ -7,6 +7,7 @@
  * @since 0.2.0
  */
 import type { Token } from '@oxlint/plugins';
+import { dual } from 'effect/Function';
 
 // ---------------------------------------------------------------------------
 // Type predicates
@@ -23,8 +24,14 @@ import type { Token } from '@oxlint/plugins';
  *
  * @since 0.2.0
  */
-export const isKeyword = (token: Token, keyword: string): boolean =>
-	token.type === 'Keyword' && token.value === keyword;
+export const isKeyword: {
+	(keyword: string): (token: Token) => boolean;
+	(token: Token, keyword: string): boolean;
+} = dual(
+	2,
+	(token: Token, keyword: string): boolean =>
+		token.type === 'Keyword' && token.value === keyword
+);
 
 /**
  * Check whether a token is a punctuator with the given value.
@@ -37,8 +44,14 @@ export const isKeyword = (token: Token, keyword: string): boolean =>
  *
  * @since 0.2.0
  */
-export const isPunctuator = (token: Token, value: string): boolean =>
-	token.type === 'Punctuator' && token.value === value;
+export const isPunctuator: {
+	(value: string): (token: Token) => boolean;
+	(token: Token, value: string): boolean;
+} = dual(
+	2,
+	(token: Token, value: string): boolean =>
+		token.type === 'Punctuator' && token.value === value
+);
 
 /**
  * Check whether a token is an identifier.

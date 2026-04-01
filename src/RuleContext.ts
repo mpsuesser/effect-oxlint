@@ -77,30 +77,54 @@ export const fromOxlintContext = (ctx: OxlintContext): RuleContext['Service'] =>
 // Convenience accessors (yield*-able inside handlers)
 // ---------------------------------------------------------------------------
 
-/** Effectful access to the rule ID. */
+/**
+ * Effectful access to the rule ID.
+ *
+ * @since 0.1.0
+ */
 export const id: Effect.Effect<string, never, RuleContext> = Effect.service(
 	RuleContext
 ).pipe(Effect.map((ctx) => ctx.id));
 
-/** Effectful access to the filename of the file being linted. */
+/**
+ * Effectful access to the filename of the file being linted.
+ *
+ * @since 0.1.0
+ */
 export const filename: Effect.Effect<string, never, RuleContext> =
 	Effect.service(RuleContext).pipe(Effect.map((ctx) => ctx.filename));
 
-/** Effectful access to the working directory. */
+/**
+ * Effectful access to the working directory.
+ *
+ * @since 0.1.0
+ */
 export const cwd: Effect.Effect<string, never, RuleContext> = Effect.service(
 	RuleContext
 ).pipe(Effect.map((ctx) => ctx.cwd));
 
-/** Effectful access to the SourceCode object. */
+/**
+ * Effectful access to the SourceCode object.
+ *
+ * @since 0.1.0
+ */
 export const sourceCode: Effect.Effect<SourceCode, never, RuleContext> =
 	Effect.service(RuleContext).pipe(Effect.map((ctx) => ctx.sourceCode));
 
-/** Effectful access to the raw source text. */
+/**
+ * Effectful access to the raw source text.
+ *
+ * @since 0.1.0
+ */
 export const text: Effect.Effect<string, never, RuleContext> = Effect.service(
 	RuleContext
 ).pipe(Effect.map((ctx) => ctx.sourceCode.text));
 
-/** Effectful access to the AST root node. */
+/**
+ * Effectful access to the AST root node.
+ *
+ * @since 0.1.0
+ */
 export const ast: Effect.Effect<ESTree.Program, never, RuleContext> =
 	Effect.service(RuleContext).pipe(Effect.map((ctx) => ctx.sourceCode.ast));
 
@@ -109,6 +133,8 @@ export const ast: Effect.Effect<ESTree.Program, never, RuleContext> =
  *
  * Shorthand so handlers can `yield* RuleContext.report(diagnostic)`
  * without first resolving the full service.
+ *
+ * @since 0.1.0
  */
 export const report = (
 	diagnostic: OxlintDiagnostic

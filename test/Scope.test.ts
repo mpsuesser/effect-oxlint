@@ -1,8 +1,37 @@
 import { describe, expect, test } from '@effect/vitest';
+import { pipe } from 'effect/Function';
 import * as Option from 'effect/Option';
 
 import * as Scope from '../src/Scope.ts';
 import { Testing } from '../src/index.ts';
+
+// ---------------------------------------------------------------------------
+// Shared reference helpers
+// ---------------------------------------------------------------------------
+
+const readRef = () => ({
+	isRead: () => true,
+	isWrite: () => false,
+	isReadOnly: () => true,
+	isWriteOnly: () => false,
+	isReadWrite: () => false
+});
+
+const writeRef = () => ({
+	isRead: () => false,
+	isWrite: () => true,
+	isReadOnly: () => false,
+	isWriteOnly: () => true,
+	isReadWrite: () => false
+});
+
+const readWriteRef = () => ({
+	isRead: () => true,
+	isWrite: () => true,
+	isReadOnly: () => false,
+	isWriteOnly: () => false,
+	isReadWrite: () => true
+});
 
 // ---------------------------------------------------------------------------
 // findVariable
@@ -75,17 +104,7 @@ describe('Scope.findVariableUp', () => {
 
 describe('Scope.isUsed', () => {
 	test('returns true when variable has read references', () => {
-		const v = Testing.variable('x', {
-			references: [
-				{
-					isRead: () => true,
-					isWrite: () => false,
-					isReadOnly: () => true,
-					isWriteOnly: () => false,
-					isReadWrite: () => false
-				}
-			]
-		});
+		const v = Testing.variable('x', { references: [readRef()] });
 		expect(Scope.isUsed(v)).toBe(true);
 	});
 
@@ -97,50 +116,30 @@ describe('Scope.isUsed', () => {
 
 describe('Scope.isWritten', () => {
 	test('returns true when variable has write references', () => {
-		const v = Testing.variable('x', {
-			references: [
-				{
-					isRead: () => false,
-					isWrite: () => true,
-					isReadOnly: () => false,
-					isWriteOnly: () => true,
-					isReadWrite: () => false
-				}
-			]
-		});
+		const v = Testing.variable('x', { references: [writeRef()] });
 		expect(Scope.isWritten(v)).toBe(true);
 	});
 
 	test('returns false when variable has only read references', () => {
-		const v = Testing.variable('x', {
-			references: [
-				{
-					isRead: () => true,
-					isWrite: () => false,
-					isReadOnly: () => true,
-					isWriteOnly: () => false,
-					isReadWrite: () => false
-				}
-			]
-		});
+		const v = Testing.variable('x', { references: [readRef()] });
 		expect(Scope.isWritten(v)).toBe(false);
+	});
+
+	test('returns true for read-write references', () => {
+		const v = Testing.variable('x', { references: [readWriteRef()] });
+		expect(Scope.isWritten(v)).toBe(true);
 	});
 });
 
 describe('Scope.isReadOnly', () => {
 	test('returns true for read-only references', () => {
-		const v = Testing.variable('x', {
-			references: [
-				{
-					isRead: () => true,
-					isWrite: () => false,
-					isReadOnly: () => true,
-					isWriteOnly: () => false,
-					isReadWrite: () => false
-				}
-			]
-		});
+		const v = Testing.variable('x', { references: [readRef()] });
 		expect(Scope.isReadOnly(v)).toBe(true);
+	});
+
+	test('returns false when no read-only references', () => {
+		const v = Testing.variable('x', { references: [writeRef()] });
+		expect(Scope.isReadOnly(v)).toBe(false);
 	});
 });
 
@@ -150,43 +149,17 @@ describe('Scope.isReadOnly', () => {
 
 describe('Scope.getReferences', () => {
 	test('returns all references for a variable', () => {
-		const ref1 = {
-			isRead: () => true,
-			isWrite: () => false,
-			isReadOnly: () => true,
-			isWriteOnly: () => false,
-			isReadWrite: () => false
-		};
-		const ref2 = {
-			isRead: () => false,
-			isWrite: () => true,
-			isReadOnly: () => false,
-			isWriteOnly: () => true,
-			isReadWrite: () => false
-		};
-		const v = Testing.variable('x', { references: [ref1, ref2] });
+		const v = Testing.variable('x', {
+			references: [readRef(), writeRef()]
+		});
 		expect(Scope.getReferences(v)).toHaveLength(2);
 	});
 });
 
 describe('Scope.getReadReferences', () => {
 	test('filters to only read references', () => {
-		const readRef = {
-			isRead: () => true,
-			isWrite: () => false,
-			isReadOnly: () => true,
-			isWriteOnly: () => false,
-			isReadWrite: () => false
-		};
-		const writeRef = {
-			isRead: () => false,
-			isWrite: () => true,
-			isReadOnly: () => false,
-			isWriteOnly: () => true,
-			isReadWrite: () => false
-		};
 		const v = Testing.variable('x', {
-			references: [readRef, writeRef]
+			references: [readRef(), writeRef()]
 		});
 		expect(Scope.getReadReferences(v)).toHaveLength(1);
 	});
@@ -194,22 +167,8 @@ describe('Scope.getReadReferences', () => {
 
 describe('Scope.getWriteReferences', () => {
 	test('filters to only write references', () => {
-		const readRef = {
-			isRead: () => true,
-			isWrite: () => false,
-			isReadOnly: () => true,
-			isWriteOnly: () => false,
-			isReadWrite: () => false
-		};
-		const writeRef = {
-			isRead: () => false,
-			isWrite: () => true,
-			isReadOnly: () => false,
-			isWriteOnly: () => true,
-			isReadWrite: () => false
-		};
 		const v = Testing.variable('x', {
-			references: [readRef, writeRef]
+			references: [readRef(), writeRef()]
 		});
 		expect(Scope.getWriteReferences(v)).toHaveLength(1);
 	});
@@ -250,11 +209,39 @@ describe('Scope.variables', () => {
 	});
 });
 
+describe('Scope.throughReferences', () => {
+	test('returns through references from scope', () => {
+		const s = Testing.scope();
+		expect(Scope.throughReferences(s)).toEqual([]);
+	});
+});
+
 describe('Scope.isStrict', () => {
 	test('returns strict mode flag', () => {
 		const strict = Testing.scope({ isStrict: true });
 		const nonStrict = Testing.scope({ isStrict: false });
 		expect(Scope.isStrict(strict)).toBe(true);
 		expect(Scope.isStrict(nonStrict)).toBe(false);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Dual API
+// ---------------------------------------------------------------------------
+
+describe('Scope dual API', () => {
+	test('findVariable supports data-last usage', () => {
+		const myVar = Testing.variable('x');
+		const s = Testing.scope({ variables: [myVar] });
+		const result = pipe(s, Scope.findVariable('x'));
+		expect(Option.isSome(result)).toBe(true);
+	});
+
+	test('findVariableUp supports data-last usage', () => {
+		const parentVar = Testing.variable('y');
+		const parentScope = Testing.scope({ variables: [parentVar] });
+		const childScope = Testing.scope({ upper: parentScope });
+		const result = pipe(childScope, Scope.findVariableUp('y'));
+		expect(Option.isSome(result)).toBe(true);
 	});
 });

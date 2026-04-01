@@ -473,29 +473,44 @@ const isASTShape = (
  *
  * @since 0.1.0
  */
-export const findAncestor = (
-	node: { readonly parent?: unknown },
-	type: string
-): Option.Option<{ readonly type: string; readonly parent?: unknown }> => {
-	const walk = (
-		current: unknown
-	): Option.Option<{
-		readonly type: string;
+export const findAncestor: {
+	(
+		type: string
+	): (node: {
 		readonly parent?: unknown;
-	}> => {
-		if (!isASTShape(current)) return Option.none();
-		if (current.type === type) return Option.some(current);
-		return walk(current.parent);
-	};
-	return walk(node.parent);
-};
+	}) => Option.Option<{ readonly type: string; readonly parent?: unknown }>;
+	(
+		node: { readonly parent?: unknown },
+		type: string
+	): Option.Option<{ readonly type: string; readonly parent?: unknown }>;
+} = dual(
+	2,
+	(
+		node: { readonly parent?: unknown },
+		type: string
+	): Option.Option<{ readonly type: string; readonly parent?: unknown }> => {
+		const walk = (
+			current: unknown
+		): Option.Option<{
+			readonly type: string;
+			readonly parent?: unknown;
+		}> => {
+			if (!isASTShape(current)) return Option.none();
+			if (current.type === type) return Option.some(current);
+			return walk(current.parent);
+		};
+		return walk(node.parent);
+	}
+);
 
 /**
  * Check whether any ancestor of the node has the given `type`.
  *
  * @since 0.1.0
  */
-export const hasAncestor = (
-	node: { readonly parent?: unknown },
-	type: string
-): boolean => Option.isSome(findAncestor(node, type));
+export const hasAncestor: {
+	(type: string): (node: { readonly parent?: unknown }) => boolean;
+	(node: { readonly parent?: unknown }, type: string): boolean;
+} = dual(2, (node: { readonly parent?: unknown }, type: string): boolean =>
+	Option.isSome(findAncestor(node, type))
+);

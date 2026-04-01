@@ -7,8 +7,9 @@
  * @since 0.1.0
  */
 import type { ESTree, Visitor as OxlintVisitor } from '@oxlint/plugins';
+import * as Arr from 'effect/Array';
 import * as Effect from 'effect/Effect';
-import { pipe } from 'effect/Function';
+import { dual, pipe } from 'effect/Function';
 import * as Option from 'effect/Option';
 import * as R from 'effect/Record';
 import * as Ref from 'effect/Ref';
@@ -118,6 +119,9 @@ export const onExit = <K extends string>(
 // Combinators
 // ---------------------------------------------------------------------------
 
+/** @internal Empty visitor seed for reduce operations. */
+const emptyVisitor: EffectVisitor = {};
+
 /** @internal Combine two handlers for the same node type into one sequential handler. */
 const sequenceHandlers =
 	(left: EffectHandler, right: EffectHandler): EffectHandler =>
@@ -135,12 +139,8 @@ const sequenceHandlers =
 export const merge = (
 	...visitors: ReadonlyArray<EffectVisitor>
 ): EffectVisitor =>
-	visitors.reduce<EffectVisitor>(
-		(acc, visitor) =>
-			R.union(acc, visitor, (left, right) =>
-				sequenceHandlers(left, right)
-			),
-		{}
+	Arr.reduce(visitors, emptyVisitor, (acc, visitor) =>
+		R.union(acc, visitor, (left, right) => sequenceHandlers(left, right))
 	);
 
 /**
@@ -195,13 +195,26 @@ export const tracked = <K extends string>(
  *
  * @since 0.2.0
  */
-export const filter = (
-	predicate: (filename: string) => boolean,
-	visitor: EffectVisitor
-): Effect.Effect<EffectVisitor, never, RuleContext> =>
-	Effect.service(RuleContext).pipe(
-		Effect.map((ctx) => (predicate(ctx.filename) ? visitor : {}))
-	);
+export const filter: {
+	(
+		predicate: (filename: string) => boolean
+	): (
+		visitor: EffectVisitor
+	) => Effect.Effect<EffectVisitor, never, RuleContext>;
+	(
+		predicate: (filename: string) => boolean,
+		visitor: EffectVisitor
+	): Effect.Effect<EffectVisitor, never, RuleContext>;
+} = dual(
+	2,
+	(
+		predicate: (filename: string) => boolean,
+		visitor: EffectVisitor
+	): Effect.Effect<EffectVisitor, never, RuleContext> =>
+		Effect.service(RuleContext).pipe(
+			Effect.map((ctx) => (predicate(ctx.filename) ? visitor : {}))
+		)
+);
 
 /**
  * Accumulate values during traversal and analyze them at `Program:exit`.

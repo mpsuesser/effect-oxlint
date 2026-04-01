@@ -65,7 +65,7 @@ export const isJSDoc = (comment: Comment): boolean =>
  * @since 0.2.0
  */
 export const isDisableDirective = (comment: Comment): boolean => {
-	const trimmed = comment.value.trim();
+	const trimmed = Str.trim(comment.value);
 	return (
 		Str.startsWith('eslint-disable')(trimmed) ||
 		Str.startsWith('oxlint-disable')(trimmed)
@@ -78,7 +78,7 @@ export const isDisableDirective = (comment: Comment): boolean => {
  * @since 0.2.0
  */
 export const isEnableDirective = (comment: Comment): boolean => {
-	const trimmed = comment.value.trim();
+	const trimmed = Str.trim(comment.value);
 	return (
 		Str.startsWith('eslint-enable')(trimmed) ||
 		Str.startsWith('oxlint-enable')(trimmed)

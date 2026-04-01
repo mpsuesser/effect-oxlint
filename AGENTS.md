@@ -8,7 +8,6 @@ Effect-first library for writing oxlint custom lint rules. Wraps `@oxlint/plugin
 bun run check          # lint + format + typecheck (with auto-fix)
 bun run test           # vitest run (all tests)
 bun run typecheck      # tsgo type-check only
-bun run build          # vite-plus build
 ```
 
 ### Running a single test
@@ -32,7 +31,7 @@ bun run check && bun run test && bun run typecheck
 ```
 src/           12 modules — AST, Comment, Diagnostic, Plugin, Rule, RuleContext,
                Scope, SourceCode, Testing, Token, Visitor, index (barrel)
-test/          11 test files — one per source module, plus _builders.ts shared helpers
+test/          11 test files — one per source module
 vite.config.ts Lint rules, formatting, test config (vite-plus)
 ```
 
@@ -115,8 +114,9 @@ Every source file follows this layout:
 
 ### Effect Module Usage (not native JS)
 
-- `Arr.*` over `Array.prototype.*` — `Arr.map`, `Arr.filter`, `Arr.reduce`, `Arr.contains`, `Arr.match`
+- `Arr.*` over `Array.prototype.*` — `Arr.map`, `Arr.filter`, `Arr.reduce`, `Arr.contains`, `Arr.match`, `Arr.join`
 - `R.*` over `Object.*` — `R.union`, `R.filter`, `R.map`
+- `Str.*` over `String.prototype.*` — `Str.trim`, `Str.startsWith`, `Str.split`
 - `P.isString`, `P.isObject` over raw `typeof` checks
 - `Option` over `null | undefined` in domain code
 - No imperative `for` / `for...of` loops in domain code
@@ -134,13 +134,13 @@ Every source file follows this layout:
 - Import test utilities: `import { describe, expect, test } from '@effect/vitest'`
 - Effectful tests: `it.effect('name', () => Effect.gen(function* () { ... }).pipe(Effect.provide(TestLayer)))`
 - Pure tests: `test('name', () => { expect(...).toBe(...) })`
-- Shared builders in `test/_builders.ts` for mock AST nodes
+- Use `test` for pure tests, `it.effect` for effectful tests (never `it` for pure tests)
 - Test module `src/Testing.ts` provides `createMockContext`, `runRule`, `expectDiagnostics`
 - Section separators between test groups (same `// ---` format as source)
 
 ### JSDoc
 
-- Every exported API has JSDoc with `@since 0.1.0`
+- Every exported API has JSDoc with `@since 0.x.0`
 - Module-level doc block at top of each file with description and `@since`
 - `@internal` marks non-public exports
 - `@example` with code blocks for key APIs
@@ -153,6 +153,7 @@ Every source file follows this layout:
 - `withSourceCode` pattern: `Effect.service(RuleContext).pipe(Effect.map(ctx => fn(ctx.sourceCode)))`
 - Visitors are `Record<string, (node: ESTree.Node) => Effect<void>>`
 - `toOxlintVisitor` converts Effect visitors to plain oxlint visitors at the boundary
+- FFI boundary casts (`as never`) are used in `Testing.ts` node builders and are documented
 
 ### Lint Rules (from vite.config.ts)
 
@@ -166,3 +167,4 @@ The project dogfoods its own `oxlint-effect` rules. Key enforced rules:
 - ~50 additional `effect/*` rules at `warn` level (prefer-option-over-null, avoid-native-fetch, prefer-match-over-switch, etc.)
 
 Test file overrides: `avoid-untagged-errors` and `avoid-try-catch` disabled.
+FFI boundary overrides: `prefer-option-over-null`, `casting-awareness`, `avoid-any`, `avoid-native-object-helpers`, `effect-run-in-body` disabled for `SourceCode.ts`, `Testing.ts`, `Rule.ts`, `Visitor.ts`.

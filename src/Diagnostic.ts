@@ -14,6 +14,7 @@ import type {
 	Suggestion
 } from '@oxlint/plugins';
 import * as Arr from 'effect/Array';
+import { dual } from 'effect/Function';
 import * as Option from 'effect/Option';
 import * as P from 'effect/Predicate';
 import * as Result from 'effect/Result';
@@ -22,7 +23,11 @@ import * as Result from 'effect/Result';
 // Re-exports
 // ---------------------------------------------------------------------------
 
-/** The raw oxlint diagnostic type. */
+/**
+ * The raw oxlint diagnostic type.
+ *
+ * @since 0.1.0
+ */
 export type { OxlintDiagnostic as Diagnostic };
 
 // ---------------------------------------------------------------------------
@@ -68,26 +73,40 @@ export const fromId = (opts: {
  *
  * @since 0.1.0
  */
-export const withFix = (
-	diagnostic: OxlintDiagnostic,
-	fix: FixFn
-): OxlintDiagnostic => ({
-	...diagnostic,
-	fix
-});
+export const withFix: {
+	(fix: FixFn): (diagnostic: OxlintDiagnostic) => OxlintDiagnostic;
+	(diagnostic: OxlintDiagnostic, fix: FixFn): OxlintDiagnostic;
+} = dual(
+	2,
+	(diagnostic: OxlintDiagnostic, fix: FixFn): OxlintDiagnostic => ({
+		...diagnostic,
+		fix
+	})
+);
 
 /**
  * Attach suggestion fixes to a diagnostic.
  *
  * @since 0.1.0
  */
-export const withSuggestions = (
-	diagnostic: OxlintDiagnostic,
-	suggestions: ReadonlyArray<Suggestion>
-): OxlintDiagnostic => ({
-	...diagnostic,
-	suggest: Array.from(suggestions)
-});
+export const withSuggestions: {
+	(
+		suggestions: ReadonlyArray<Suggestion>
+	): (diagnostic: OxlintDiagnostic) => OxlintDiagnostic;
+	(
+		diagnostic: OxlintDiagnostic,
+		suggestions: ReadonlyArray<Suggestion>
+	): OxlintDiagnostic;
+} = dual(
+	2,
+	(
+		diagnostic: OxlintDiagnostic,
+		suggestions: ReadonlyArray<Suggestion>
+	): OxlintDiagnostic => ({
+		...diagnostic,
+		suggest: Array.from(suggestions)
+	})
+);
 
 // ---------------------------------------------------------------------------
 // Fix helpers
@@ -102,25 +121,41 @@ export const withSuggestions = (
  * @since 0.1.0
  */
 
-/** Replace the text of a node or token. */
+/**
+ * Replace the text of a node or token.
+ *
+ * @since 0.1.0
+ */
 export const replaceText =
 	(nodeOrToken: Ranged, text: string): FixFn =>
 	(fixer) =>
 		fixer.replaceText(nodeOrToken, text);
 
-/** Insert text before a node or token. */
+/**
+ * Insert text before a node or token.
+ *
+ * @since 0.1.0
+ */
 export const insertBefore =
 	(nodeOrToken: Ranged, text: string): FixFn =>
 	(fixer) =>
 		fixer.insertTextBefore(nodeOrToken, text);
 
-/** Insert text after a node or token. */
+/**
+ * Insert text after a node or token.
+ *
+ * @since 0.1.0
+ */
 export const insertAfter =
 	(nodeOrToken: Ranged, text: string): FixFn =>
 	(fixer) =>
 		fixer.insertTextAfter(nodeOrToken, text);
 
-/** Remove a node or token. */
+/**
+ * Remove a node or token.
+ *
+ * @since 0.1.0
+ */
 export const removeFix =
 	(nodeOrToken: Ranged): FixFn =>
 	(fixer) =>

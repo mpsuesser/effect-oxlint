@@ -10,7 +10,11 @@ import * as Arr from 'effect/Array';
 // Re-exports
 // ---------------------------------------------------------------------------
 
-/** The raw oxlint plugin type. */
+/**
+ * The raw oxlint plugin type.
+ *
+ * @since 0.1.0
+ */
 export type { OxlintPlugin as Plugin };
 
 // ---------------------------------------------------------------------------
@@ -54,7 +58,10 @@ export const merge = (
 	...plugins: ReadonlyArray<OxlintPlugin>
 ): OxlintPlugin => ({
 	meta: {
-		name: Arr.map(plugins, (p) => p.meta?.name ?? 'unknown').join('+')
+		name: Arr.join(
+			Arr.map(plugins, (p) => p.meta?.name ?? 'unknown'),
+			'+'
+		)
 	},
 	rules: Arr.reduce<OxlintPlugin, Record<string, Rule>>(
 		plugins,

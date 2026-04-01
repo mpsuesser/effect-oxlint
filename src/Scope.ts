@@ -15,8 +15,8 @@ import type {
 	Scope as OxlintScope,
 	Variable
 } from '@oxlint/plugins';
-import { pipe } from 'effect/Function';
 import * as Arr from 'effect/Array';
+import { dual, pipe } from 'effect/Function';
 import * as Option from 'effect/Option';
 
 // ---------------------------------------------------------------------------
@@ -30,10 +30,14 @@ import * as Option from 'effect/Option';
  *
  * @since 0.2.0
  */
-export const findVariable = (
-	scope: OxlintScope,
-	name: string
-): Option.Option<Variable> => Option.fromNullishOr(scope.set.get(name));
+export const findVariable: {
+	(name: string): (scope: OxlintScope) => Option.Option<Variable>;
+	(scope: OxlintScope, name: string): Option.Option<Variable>;
+} = dual(
+	2,
+	(scope: OxlintScope, name: string): Option.Option<Variable> =>
+		Option.fromNullishOr(scope.set.get(name))
+);
 
 /**
  * Find a variable by name, walking up the scope chain.
@@ -43,10 +47,10 @@ export const findVariable = (
  *
  * @since 0.2.0
  */
-export const findVariableUp = (
-	scope: OxlintScope,
-	name: string
-): Option.Option<Variable> => {
+export const findVariableUp: {
+	(name: string): (scope: OxlintScope) => Option.Option<Variable>;
+	(scope: OxlintScope, name: string): Option.Option<Variable>;
+} = dual(2, (scope: OxlintScope, name: string): Option.Option<Variable> => {
 	const walk = (current: OxlintScope): Option.Option<Variable> =>
 		pipe(
 			Option.fromNullishOr(current.set.get(name)),
@@ -58,7 +62,7 @@ export const findVariableUp = (
 			)
 		);
 	return walk(scope);
-};
+});
 
 // ---------------------------------------------------------------------------
 // Variable predicates

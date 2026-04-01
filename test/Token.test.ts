@@ -22,6 +22,12 @@ describe('Token.isKeyword', () => {
 		const t = Testing.token('Identifier', 'const');
 		expect(Token.isKeyword(t, 'const')).toBe(false);
 	});
+
+	test('supports data-last (pipe) usage', () => {
+		const t = Testing.token('Keyword', 'const');
+		const check = Token.isKeyword('const');
+		expect(check(t)).toBe(true);
+	});
 });
 
 describe('Token.isPunctuator', () => {
@@ -38,6 +44,12 @@ describe('Token.isPunctuator', () => {
 	test('returns false for non-punctuator', () => {
 		const t = Testing.token('Identifier', '{');
 		expect(Token.isPunctuator(t, '{')).toBe(false);
+	});
+
+	test('supports data-last (pipe) usage', () => {
+		const t = Testing.token('Punctuator', ';');
+		const check = Token.isPunctuator(';');
+		expect(check(t)).toBe(true);
 	});
 });
 
@@ -58,12 +70,22 @@ describe('Token.isString', () => {
 		const t = Testing.token('String', '"hello"');
 		expect(Token.isString(t)).toBe(true);
 	});
+
+	test('returns false for non-string token', () => {
+		const t = Testing.token('Numeric', '42');
+		expect(Token.isString(t)).toBe(false);
+	});
 });
 
 describe('Token.isNumeric', () => {
 	test('returns true for numeric token', () => {
 		const t = Testing.token('Numeric', '42');
 		expect(Token.isNumeric(t)).toBe(true);
+	});
+
+	test('returns false for non-numeric token', () => {
+		const t = Testing.token('String', '"42"');
+		expect(Token.isNumeric(t)).toBe(false);
 	});
 });
 
@@ -72,12 +94,22 @@ describe('Token.isBoolean', () => {
 		const t = Testing.token('Boolean', 'true');
 		expect(Token.isBoolean(t)).toBe(true);
 	});
+
+	test('returns false for non-boolean token', () => {
+		const t = Testing.token('Keyword', 'true');
+		expect(Token.isBoolean(t)).toBe(false);
+	});
 });
 
 describe('Token.isNull', () => {
 	test('returns true for null token', () => {
 		const t = Testing.token('Null', 'null');
 		expect(Token.isNull(t)).toBe(true);
+	});
+
+	test('returns false for non-null token', () => {
+		const t = Testing.token('Keyword', 'null');
+		expect(Token.isNull(t)).toBe(false);
 	});
 });
 
@@ -86,6 +118,11 @@ describe('Token.isTemplate', () => {
 		const t = Testing.token('Template', '`hello`');
 		expect(Token.isTemplate(t)).toBe(true);
 	});
+
+	test('returns false for non-template token', () => {
+		const t = Testing.token('String', '`hello`');
+		expect(Token.isTemplate(t)).toBe(false);
+	});
 });
 
 describe('Token.isRegularExpression', () => {
@@ -93,12 +130,22 @@ describe('Token.isRegularExpression', () => {
 		const t = Testing.token('RegularExpression', '/abc/');
 		expect(Token.isRegularExpression(t)).toBe(true);
 	});
+
+	test('returns false for non-regex token', () => {
+		const t = Testing.token('String', '/abc/');
+		expect(Token.isRegularExpression(t)).toBe(false);
+	});
 });
 
 describe('Token.isPrivateIdentifier', () => {
 	test('returns true for private identifier token', () => {
 		const t = Testing.token('PrivateIdentifier', '#foo');
 		expect(Token.isPrivateIdentifier(t)).toBe(true);
+	});
+
+	test('returns false for non-private identifier token', () => {
+		const t = Testing.token('Identifier', '#foo');
+		expect(Token.isPrivateIdentifier(t)).toBe(false);
 	});
 });
 

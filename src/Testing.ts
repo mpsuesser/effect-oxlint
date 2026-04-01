@@ -47,11 +47,19 @@ import { fromOxlintContext, RuleContext } from './RuleContext.ts';
  * @since 0.2.0
  */
 
-/** Identifier: `{ type: "Identifier", name }` */
+/**
+ * Identifier: `{ type: "Identifier", name }`
+ *
+ * @since 0.2.0
+ */
 export const id = (name: string): ESTree.IdentifierName =>
 	({ type: 'Identifier', name }) as never;
 
-/** MemberExpression: `obj.prop` (non-computed) */
+/**
+ * MemberExpression: `obj.prop` (non-computed)
+ *
+ * @since 0.2.0
+ */
 export const memberExpr = (
 	obj: string,
 	prop: string
@@ -64,7 +72,11 @@ export const memberExpr = (
 		optional: false
 	}) as never;
 
-/** MemberExpression: `obj[prop]` (computed) */
+/**
+ * MemberExpression: `obj[prop]` (computed)
+ *
+ * @since 0.2.0
+ */
 export const computedMemberExpr = (
 	obj: string,
 	prop: string
@@ -77,7 +89,11 @@ export const computedMemberExpr = (
 		optional: false
 	}) as never;
 
-/** Chained MemberExpression: `a.b.c` (non-computed) */
+/**
+ * Chained MemberExpression: `a.b.c` (non-computed)
+ *
+ * @since 0.2.0
+ */
 export const chainedMemberExpr = (
 	...names: readonly [string, string, ...ReadonlyArray<string>]
 ): ESTree.MemberExpression => {
@@ -97,7 +113,11 @@ export const chainedMemberExpr = (
 	);
 };
 
-/** CallExpression with bare identifier callee: `name(args)` */
+/**
+ * CallExpression with bare identifier callee: `name(args)`
+ *
+ * @since 0.2.0
+ */
 export const callExpr = (
 	name: string,
 	args: ReadonlyArray<unknown> = []
@@ -108,7 +128,11 @@ export const callExpr = (
 		arguments: args
 	}) as never;
 
-/** CallExpression with MemberExpression callee: `obj.prop(args)` */
+/**
+ * CallExpression with MemberExpression callee: `obj.prop(args)`
+ *
+ * @since 0.2.0
+ */
 export const callOfMember = (
 	obj: string,
 	prop: string,
@@ -120,7 +144,11 @@ export const callOfMember = (
 		arguments: args
 	}) as never;
 
-/** ImportDeclaration: `import ... from "source"` */
+/**
+ * ImportDeclaration: `import ... from "source"`
+ *
+ * @since 0.2.0
+ */
 export const importDecl = (source: string): ESTree.ImportDeclaration =>
 	({
 		type: 'ImportDeclaration',
@@ -128,19 +156,35 @@ export const importDecl = (source: string): ESTree.ImportDeclaration =>
 		specifiers: []
 	}) as never;
 
-/** String literal: `{ type: "Literal", value }` */
+/**
+ * String literal: `{ type: "Literal", value }`
+ *
+ * @since 0.2.0
+ */
 export const strLiteral = (value: string): ESTree.StringLiteral =>
 	({ type: 'Literal', value }) as never;
 
-/** Numeric literal: `{ type: "Literal", value }` */
+/**
+ * Numeric literal: `{ type: "Literal", value }`
+ *
+ * @since 0.2.0
+ */
 export const numLiteral = (value: number): ESTree.NumericLiteral =>
 	({ type: 'Literal', value }) as never;
 
-/** Boolean literal: `{ type: "Literal", value }` */
+/**
+ * Boolean literal: `{ type: "Literal", value }`
+ *
+ * @since 0.2.0
+ */
 export const boolLiteral = (value: boolean): ESTree.BooleanLiteral =>
 	({ type: 'Literal', value }) as never;
 
-/** ObjectExpression with identifier-keyed properties */
+/**
+ * ObjectExpression with identifier-keyed properties.
+ *
+ * @since 0.2.0
+ */
 export const objectExpr = (
 	properties: ReadonlyArray<{
 		readonly key: string;
@@ -149,14 +193,18 @@ export const objectExpr = (
 ): ESTree.ObjectExpression =>
 	({
 		type: 'ObjectExpression',
-		properties: properties.map((p) => ({
+		properties: Arr.map(properties, (p) => ({
 			type: 'Property',
 			key: id(p.key),
 			value: p.value ?? strLiteral('')
 		}))
 	}) as never;
 
-/** ObjectExpression with string literal keys */
+/**
+ * ObjectExpression with string literal keys.
+ *
+ * @since 0.2.0
+ */
 export const objectExprLiteralKeys = (
 	properties: ReadonlyArray<{
 		readonly key: string;
@@ -165,14 +213,18 @@ export const objectExprLiteralKeys = (
 ): ESTree.ObjectExpression =>
 	({
 		type: 'ObjectExpression',
-		properties: properties.map((p) => ({
+		properties: Arr.map(properties, (p) => ({
 			type: 'Property',
 			key: strLiteral(p.key),
 			value: p.value ?? strLiteral('')
 		}))
 	}) as never;
 
-/** ObjectExpression with a SpreadElement */
+/**
+ * ObjectExpression with a SpreadElement.
+ *
+ * @since 0.2.0
+ */
 export const objectExprWithSpread = (
 	spreadArg: unknown
 ): ESTree.ObjectExpression =>
@@ -181,24 +233,44 @@ export const objectExprWithSpread = (
 		properties: [{ type: 'SpreadElement', argument: spreadArg }]
 	}) as never;
 
-/** ThrowStatement */
+/**
+ * ThrowStatement.
+ *
+ * @since 0.2.0
+ */
 export const throwStmt = (): ESTree.ThrowStatement =>
 	({ type: 'ThrowStatement' }) as never;
 
-/** TryStatement */
+/**
+ * TryStatement.
+ *
+ * @since 0.2.0
+ */
 export const tryStmt = (): ESTree.Node => ({ type: 'TryStatement' }) as never;
 
-/** ReturnStatement */
+/**
+ * ReturnStatement.
+ *
+ * @since 0.2.0
+ */
 export const returnStmt = (argument?: unknown): ESTree.ReturnStatement =>
 	({ type: 'ReturnStatement', argument: argument ?? null }) as never;
 
-/** BlockStatement */
+/**
+ * BlockStatement.
+ *
+ * @since 0.2.0
+ */
 export const blockStmt = (
 	body: ReadonlyArray<unknown> = []
 ): ESTree.BlockStatement =>
 	({ type: 'BlockStatement', body: Array.from(body) }) as never;
 
-/** ArrowFunctionExpression */
+/**
+ * ArrowFunctionExpression.
+ *
+ * @since 0.2.0
+ */
 export const arrowFn = (
 	body?: unknown,
 	params: ReadonlyArray<unknown> = []
@@ -211,7 +283,11 @@ export const arrowFn = (
 		async: false
 	}) as never;
 
-/** VariableDeclaration: `const/let/var name = init` */
+/**
+ * VariableDeclaration: `const/let/var name = init`
+ *
+ * @since 0.2.0
+ */
 export const varDecl = (
 	kind: 'const' | 'let' | 'var',
 	name: string,
@@ -229,11 +305,19 @@ export const varDecl = (
 		]
 	}) as never;
 
-/** ExpressionStatement */
+/**
+ * ExpressionStatement.
+ *
+ * @since 0.2.0
+ */
 export const exprStmt = (expression: unknown): ESTree.ExpressionStatement =>
 	({ type: 'ExpressionStatement', expression }) as never;
 
-/** Program node */
+/**
+ * Program node.
+ *
+ * @since 0.2.0
+ */
 export const program = (
 	body: ReadonlyArray<unknown> = [],
 	comments: ReadonlyArray<unknown> = []
@@ -265,7 +349,11 @@ export const ifStmt = (
 		alternate: alternate ?? null
 	}) as never;
 
-/** BinaryExpression */
+/**
+ * BinaryExpression.
+ *
+ * @since 0.2.0
+ */
 export const binaryExpr = (
 	operator: string,
 	left: unknown,
@@ -294,7 +382,11 @@ export const newExpr: {
 		arguments: Array.from(args)
 	}) as never;
 
-/** A generic AST node with type and optional parent pointer */
+/**
+ * A generic AST node with type and optional parent pointer.
+ *
+ * @since 0.2.0
+ */
 export const astNode = (
 	type: string,
 	parent?: { readonly type: string; readonly parent?: unknown }
@@ -313,6 +405,8 @@ export const astNode = (
  * // Creates: FunctionDeclaration → BlockStatement → ThrowStatement
  * withParentChain('FunctionDeclaration', 'BlockStatement', 'ThrowStatement')
  * ```
+ *
+ * @since 0.2.0
  */
 export const withParentChain = (
 	first: string,
@@ -327,7 +421,11 @@ export const withParentChain = (
 		(parent, type) => astNode(type, parent)
 	);
 
-/** Mock Token */
+/**
+ * Mock Token.
+ *
+ * @since 0.2.0
+ */
 export const token = (type: Token['type'], value: string): Token =>
 	({
 		type,
@@ -342,7 +440,11 @@ export const token = (type: Token['type'], value: string): Token =>
 		regex: undefined
 	}) as never;
 
-/** Mock Comment */
+/**
+ * Mock Comment.
+ *
+ * @since 0.2.0
+ */
 export const comment = (type: Comment['type'], value: string): Comment =>
 	({
 		type,
@@ -356,7 +458,11 @@ export const comment = (type: Comment['type'], value: string): Comment =>
 		}
 	}) as never;
 
-/** Mock Scope with minimal surface */
+/**
+ * Mock Scope with minimal surface.
+ *
+ * @since 0.2.0
+ */
 export const scope = (
 	opts: {
 		readonly type?: OxlintScope['type'];
@@ -382,7 +488,11 @@ export const scope = (
 	};
 };
 
-/** Mock Variable */
+/**
+ * Mock Variable.
+ *
+ * @since 0.2.0
+ */
 export const variable = (
 	name: string,
 	opts: {
@@ -407,11 +517,19 @@ export const variable = (
 // Statement Builders
 // ---------------------------------------------------------------------------
 
-/** SwitchStatement */
+/**
+ * SwitchStatement.
+ *
+ * @since 0.2.0
+ */
 export const switchStmt = (): ESTree.SwitchStatement =>
 	({ type: 'SwitchStatement', discriminant: null, cases: [] }) as never;
 
-/** ForStatement */
+/**
+ * ForStatement.
+ *
+ * @since 0.2.0
+ */
 export const forStmt = (): ESTree.ForStatement =>
 	({
 		type: 'ForStatement',
@@ -421,7 +539,11 @@ export const forStmt = (): ESTree.ForStatement =>
 		body: blockStmt()
 	}) as never;
 
-/** ForInStatement */
+/**
+ * ForInStatement.
+ *
+ * @since 0.2.0
+ */
 export const forInStmt = (): ESTree.ForInStatement =>
 	({
 		type: 'ForInStatement',
@@ -430,7 +552,11 @@ export const forInStmt = (): ESTree.ForInStatement =>
 		body: blockStmt()
 	}) as never;
 
-/** ForOfStatement */
+/**
+ * ForOfStatement.
+ *
+ * @since 0.2.0
+ */
 export const forOfStmt = (): ESTree.ForOfStatement =>
 	({
 		type: 'ForOfStatement',
@@ -440,7 +566,11 @@ export const forOfStmt = (): ESTree.ForOfStatement =>
 		body: blockStmt()
 	}) as never;
 
-/** WhileStatement */
+/**
+ * WhileStatement.
+ *
+ * @since 0.2.0
+ */
 export const whileStmt = (): ESTree.WhileStatement =>
 	({
 		type: 'WhileStatement',
@@ -448,7 +578,11 @@ export const whileStmt = (): ESTree.WhileStatement =>
 		body: blockStmt()
 	}) as never;
 
-/** DoWhileStatement */
+/**
+ * DoWhileStatement.
+ *
+ * @since 0.2.0
+ */
 export const doWhileStmt = (): ESTree.DoWhileStatement =>
 	({
 		type: 'DoWhileStatement',
@@ -460,7 +594,11 @@ export const doWhileStmt = (): ESTree.DoWhileStatement =>
 // Expression Builders
 // ---------------------------------------------------------------------------
 
-/** YieldExpression */
+/**
+ * YieldExpression.
+ *
+ * @since 0.2.0
+ */
 export const yieldExpr = (
 	argument?: unknown,
 	delegate: boolean = false
@@ -471,7 +609,11 @@ export const yieldExpr = (
 		delegate
 	}) as never;
 
-/** UnaryExpression: `operator argument` */
+/**
+ * UnaryExpression: `operator argument`
+ *
+ * @since 0.2.0
+ */
 export const unaryExpr = (
 	operator: string,
 	argument: unknown
@@ -482,7 +624,11 @@ export const unaryExpr = (
 // Declaration Builders
 // ---------------------------------------------------------------------------
 
-/** VariableDeclarator (standalone, without wrapping VariableDeclaration) */
+/**
+ * VariableDeclarator (standalone, without wrapping VariableDeclaration).
+ *
+ * @since 0.2.0
+ */
 export const varDeclarator = (
 	name: string,
 	init?: unknown
@@ -493,7 +639,11 @@ export const varDeclarator = (
 		init: init ?? null
 	}) as never;
 
-/** ExportNamedDeclaration */
+/**
+ * ExportNamedDeclaration.
+ *
+ * @since 0.2.0
+ */
 export const exportNamedDecl = (
 	declaration?: unknown
 ): ESTree.ExportNamedDeclaration =>
@@ -508,7 +658,11 @@ export const exportNamedDecl = (
 // Import Specifier Builders
 // ---------------------------------------------------------------------------
 
-/** ImportDeclaration with specifiers: `import { a, b } from "source"` */
+/**
+ * ImportDeclaration with specifiers: `import { a, b } from "source"`
+ *
+ * @since 0.2.0
+ */
 export const importDeclWithSpecifiers = (
 	source: string,
 	specifiers: ReadonlyArray<unknown>,
@@ -521,7 +675,11 @@ export const importDeclWithSpecifiers = (
 		importKind
 	}) as never;
 
-/** ImportSpecifier: `{ imported as local }` */
+/**
+ * ImportSpecifier: `{ imported as local }`
+ *
+ * @since 0.2.0
+ */
 export const importSpecifier = (
 	imported: string,
 	local?: string,
@@ -534,7 +692,11 @@ export const importSpecifier = (
 		importKind
 	}) as never;
 
-/** ImportNamespaceSpecifier: `* as local` */
+/**
+ * ImportNamespaceSpecifier: `* as local`
+ *
+ * @since 0.2.0
+ */
 export const importNamespaceSpecifier = (
 	local: string
 ): ESTree.ImportNamespaceSpecifier =>
@@ -547,7 +709,11 @@ export const importNamespaceSpecifier = (
 // TypeScript Node Builders
 // ---------------------------------------------------------------------------
 
-/** TSAsExpression: `expr as Type` */
+/**
+ * TSAsExpression: `expr as Type`
+ *
+ * @since 0.2.0
+ */
 export const tsAsExpr = (
 	typeKind: string,
 	parent?: { readonly type: string; readonly parent?: unknown }
@@ -559,16 +725,24 @@ export const tsAsExpr = (
 		parent
 	}) as never;
 
-/** TSUnionType: `A | B | C` */
+/**
+ * TSUnionType: `A | B | C`
+ *
+ * @since 0.2.0
+ */
 export const tsUnionType = (
 	typeKinds: ReadonlyArray<string>
 ): ESTree.TSUnionType =>
 	({
 		type: 'TSUnionType',
-		types: Array.from(typeKinds).map((t) => ({ type: t }))
+		types: Arr.map(typeKinds, (t) => ({ type: t }))
 	}) as never;
 
-/** TSTypeReference: `TypeName` */
+/**
+ * TSTypeReference: `TypeName`
+ *
+ * @since 0.2.0
+ */
 export const tsTypeRef = (name: string): ESTree.TSTypeReference =>
 	({
 		type: 'TSTypeReference',
@@ -576,7 +750,11 @@ export const tsTypeRef = (name: string): ESTree.TSTypeReference =>
 		typeArguments: null
 	}) as never;
 
-/** TSTypeLiteral: `{ ... }` with N members */
+/**
+ * TSTypeLiteral: `{ ... }` with N members.
+ *
+ * @since 0.2.0
+ */
 export const tsTypeLiteral = (memberCount: number): ESTree.TSTypeLiteral =>
 	({
 		type: 'TSTypeLiteral',
@@ -585,7 +763,11 @@ export const tsTypeLiteral = (memberCount: number): ESTree.TSTypeLiteral =>
 		}))
 	}) as never;
 
-/** TSInterfaceDeclaration: `interface Name { }` */
+/**
+ * TSInterfaceDeclaration: `interface Name { }`
+ *
+ * @since 0.2.0
+ */
 export const interfaceDecl = (name: string): ESTree.TSInterfaceDeclaration =>
 	({
 		type: 'TSInterfaceDeclaration',
@@ -593,7 +775,11 @@ export const interfaceDecl = (name: string): ESTree.TSInterfaceDeclaration =>
 		body: { type: 'TSInterfaceBody', body: [] }
 	}) as never;
 
-/** TSTypeAliasDeclaration: `type Name = ...` */
+/**
+ * TSTypeAliasDeclaration: `type Name = ...`
+ *
+ * @since 0.2.0
+ */
 export const typeAliasDecl = (name: string): ESTree.TSTypeAliasDeclaration =>
 	({
 		type: 'TSTypeAliasDeclaration',
@@ -621,6 +807,8 @@ export const typeAliasDecl = (name: string): ESTree.TSTypeAliasDeclaration =>
  *     members: [Testing.propertyDef('x'), Testing.methodDef('y', true)]
  * })
  * ```
+ *
+ * @since 0.2.0
  */
 export const classDecl = (
 	name: string,
@@ -640,7 +828,11 @@ export const classDecl = (
 		decorators: []
 	}) as never;
 
-/** PropertyDefinition: class field */
+/**
+ * PropertyDefinition: class field.
+ *
+ * @since 0.2.0
+ */
 export const propertyDef = (
 	name: string,
 	isStatic: boolean = false
@@ -654,7 +846,11 @@ export const propertyDef = (
 		decorators: []
 	}) as never;
 
-/** MethodDefinition: class method */
+/**
+ * MethodDefinition: class method.
+ *
+ * @since 0.2.0
+ */
 export const methodDef = (
 	name: string,
 	isStatic: boolean = false
@@ -673,12 +869,20 @@ export const methodDef = (
 // Mock Context
 // ---------------------------------------------------------------------------
 
-/** A collected diagnostic from the mock context's `report`. */
+/**
+ * A collected diagnostic from the mock context's `report`.
+ *
+ * @since 0.2.0
+ */
 export interface ReportedDiagnostic {
 	readonly diagnostic: OxlintDiagnostic;
 }
 
-/** Options for creating a mock oxlint Context. */
+/**
+ * Options for creating a mock oxlint Context.
+ *
+ * @since 0.2.0
+ */
 export interface MockContextOptions {
 	readonly filename?: string;
 	readonly cwd?: string;
@@ -963,12 +1167,14 @@ export const expectDiagnostics = (
 	if (result.length !== expected.length) {
 		throw new Error(
 			`Expected ${expected.length} diagnostics, got ${result.length}:\n` +
-				result
-					.map(
+				Arr.join(
+					Arr.map(
+						result,
 						(r) =>
 							`  - ${r.diagnostic.message ?? r.diagnostic.messageId ?? '(unknown)'}`
-					)
-					.join('\n')
+					),
+					'\n'
+				)
 		);
 	}
 	Arr.forEach(expected, (exp, i) => {
@@ -1008,11 +1214,14 @@ export const expectNoDiagnostics = (
 		onNonEmpty: (items) => {
 			throw new Error(
 				`Expected no diagnostics, got ${items.length}:\n` +
-					Arr.map(
-						items,
-						(r) =>
-							`  - ${r.diagnostic.message ?? r.diagnostic.messageId ?? '(unknown)'}`
-					).join('\n')
+					Arr.join(
+						Arr.map(
+							items,
+							(r) =>
+								`  - ${r.diagnostic.message ?? r.diagnostic.messageId ?? '(unknown)'}`
+						),
+						'\n'
+					)
 			);
 		}
 	});
