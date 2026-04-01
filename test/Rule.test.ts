@@ -244,3 +244,260 @@ describe('Rule.banImport', () => {
 		expect(Arr.length(diagnostics)).toBe(0);
 	});
 });
+
+// ---------------------------------------------------------------------------
+// Rule.banCallOf
+// ---------------------------------------------------------------------------
+
+describe('Rule.banCallOf', () => {
+	test('reports for matching bare identifier call', () => {
+		const rule = Rule.banCallOf('fetch', {
+			message: 'Use Effect HTTP client'
+		});
+		const result = Testing.runRule(
+			rule,
+			'CallExpression',
+			Testing.callExpr('fetch')
+		);
+		expect(Arr.length(result)).toBe(1);
+		expect(Testing.messages(result)).toEqual(['Use Effect HTTP client']);
+	});
+
+	test('reports for multiple banned names', () => {
+		const rule = Rule.banCallOf(['useState', 'useEffect'], {
+			message: 'Use Effect'
+		});
+		const r1 = Testing.runRule(
+			rule,
+			'CallExpression',
+			Testing.callExpr('useState')
+		);
+		expect(Arr.length(r1)).toBe(1);
+
+		const r2 = Testing.runRule(
+			rule,
+			'CallExpression',
+			Testing.callExpr('useEffect')
+		);
+		expect(Arr.length(r2)).toBe(1);
+	});
+
+	test('does not report for non-matching call', () => {
+		const rule = Rule.banCallOf('fetch', {
+			message: 'msg'
+		});
+		const result = Testing.runRule(
+			rule,
+			'CallExpression',
+			Testing.callExpr('console')
+		);
+		expect(Arr.length(result)).toBe(0);
+	});
+
+	test('does not report for member expression calls', () => {
+		const rule = Rule.banCallOf('fetch', {
+			message: 'msg'
+		});
+		const result = Testing.runRule(
+			rule,
+			'CallExpression',
+			Testing.callOfMember('window', 'fetch')
+		);
+		expect(Arr.length(result)).toBe(0);
+	});
+
+	test('uses suggestion type by default', () => {
+		const rule = Rule.banCallOf('fetch', { message: 'msg' });
+		expect(rule.meta?.type).toBe('suggestion');
+	});
+
+	test('allows overriding meta type', () => {
+		const rule = Rule.banCallOf('fetch', {
+			message: 'msg',
+			meta: { type: 'problem' }
+		});
+		expect(rule.meta?.type).toBe('problem');
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Rule.banNewExpr
+// ---------------------------------------------------------------------------
+
+describe('Rule.banNewExpr', () => {
+	test('reports for matching new expression', () => {
+		const rule = Rule.banNewExpr('Date', {
+			message: 'Use Clock service'
+		});
+		const result = Testing.runRule(
+			rule,
+			'NewExpression',
+			Testing.newExpr('Date')
+		);
+		expect(Arr.length(result)).toBe(1);
+		expect(Testing.messages(result)).toEqual(['Use Clock service']);
+	});
+
+	test('reports for multiple banned constructors', () => {
+		const rule = Rule.banNewExpr(['Error', 'TypeError'], {
+			message: 'Use tagged errors'
+		});
+		const r1 = Testing.runRule(
+			rule,
+			'NewExpression',
+			Testing.newExpr('Error')
+		);
+		expect(Arr.length(r1)).toBe(1);
+
+		const r2 = Testing.runRule(
+			rule,
+			'NewExpression',
+			Testing.newExpr('TypeError')
+		);
+		expect(Arr.length(r2)).toBe(1);
+	});
+
+	test('does not report for non-matching constructor', () => {
+		const rule = Rule.banNewExpr('Date', {
+			message: 'msg'
+		});
+		const result = Testing.runRule(
+			rule,
+			'NewExpression',
+			Testing.newExpr('Map')
+		);
+		expect(Arr.length(result)).toBe(0);
+	});
+
+	test('uses suggestion type by default', () => {
+		const rule = Rule.banNewExpr('Date', { message: 'msg' });
+		expect(rule.meta?.type).toBe('suggestion');
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Rule.banMultiple
+// ---------------------------------------------------------------------------
+
+describe('Rule.banMultiple', () => {
+	test('bans multiple statement types', () => {
+		const rule = Rule.banMultiple(
+			{
+				statements: ['ForStatement', 'ForInStatement', 'WhileStatement']
+			},
+			{ message: 'Use Arr.map instead' }
+		);
+		const r1 = Testing.runRule(rule, 'ForStatement', Testing.forStmt());
+		expect(Arr.length(r1)).toBe(1);
+
+		const r2 = Testing.runRule(rule, 'WhileStatement', Testing.whileStmt());
+		expect(Arr.length(r2)).toBe(1);
+	});
+
+	test('bans call expressions', () => {
+		const rule = Rule.banMultiple(
+			{ calls: 'fetch' },
+			{ message: 'No fetch' }
+		);
+		const result = Testing.runRule(
+			rule,
+			'CallExpression',
+			Testing.callExpr('fetch')
+		);
+		expect(Arr.length(result)).toBe(1);
+	});
+
+	test('bans new expressions', () => {
+		const rule = Rule.banMultiple(
+			{ newExprs: 'Date' },
+			{ message: 'No Date' }
+		);
+		const result = Testing.runRule(
+			rule,
+			'NewExpression',
+			Testing.newExpr('Date')
+		);
+		expect(Arr.length(result)).toBe(1);
+	});
+
+	test('bans member expressions', () => {
+		const rule = Rule.banMultiple(
+			{ members: [['Date', 'now']] },
+			{ message: 'No Date.now' }
+		);
+		const result = Testing.runRule(
+			rule,
+			'MemberExpression',
+			Testing.memberExpr('Date', 'now')
+		);
+		expect(Arr.length(result)).toBe(1);
+	});
+
+	test('bans imports', () => {
+		const rule = Rule.banMultiple(
+			{ imports: ['node:fs'] },
+			{ message: 'No node:fs' }
+		);
+		const result = Testing.runRule(
+			rule,
+			'ImportDeclaration',
+			Testing.importDecl('node:fs')
+		);
+		expect(Arr.length(result)).toBe(1);
+	});
+
+	test('combines new expressions and member bans', () => {
+		const rule = Rule.banMultiple(
+			{
+				newExprs: 'Date',
+				members: [['Date', 'now']]
+			},
+			{ message: 'Use Clock service' }
+		);
+		const r1 = Testing.runRule(
+			rule,
+			'NewExpression',
+			Testing.newExpr('Date')
+		);
+		expect(Arr.length(r1)).toBe(1);
+
+		const r2 = Testing.runRule(
+			rule,
+			'MemberExpression',
+			Testing.memberExpr('Date', 'now')
+		);
+		expect(Arr.length(r2)).toBe(1);
+	});
+
+	test('does not report for non-matching nodes', () => {
+		const rule = Rule.banMultiple(
+			{
+				calls: 'fetch',
+				newExprs: 'Date',
+				statements: ['ThrowStatement']
+			},
+			{ message: 'msg' }
+		);
+		const r1 = Testing.runRule(
+			rule,
+			'CallExpression',
+			Testing.callExpr('console')
+		);
+		expect(Arr.length(r1)).toBe(0);
+
+		const r2 = Testing.runRule(
+			rule,
+			'NewExpression',
+			Testing.newExpr('Map')
+		);
+		expect(Arr.length(r2)).toBe(0);
+	});
+
+	test('accepts custom name', () => {
+		const rule = Rule.banMultiple(
+			{ statements: ['ThrowStatement'] },
+			{ name: 'my-custom-rule', message: 'msg' }
+		);
+		expect(rule.meta?.type).toBe('suggestion');
+	});
+});

@@ -188,3 +188,88 @@ describe('Testing.expectNoDiagnostics', () => {
 		);
 	});
 });
+
+// ---------------------------------------------------------------------------
+// Testing.newExpr — string auto-wrapping
+// ---------------------------------------------------------------------------
+
+describe('Testing.newExpr', () => {
+	test('accepts a string callee and wraps it in id()', () => {
+		const node = Testing.newExpr('Date');
+		expect(node.type).toBe('NewExpression');
+		expect((node.callee as { name: string }).name).toBe('Date');
+	});
+
+	test('accepts a non-string callee unchanged', () => {
+		const callee = Testing.id('Map');
+		const node = Testing.newExpr(callee);
+		expect(node.type).toBe('NewExpression');
+		expect((node.callee as { name: string }).name).toBe('Map');
+	});
+
+	test('passes arguments through', () => {
+		const node = Testing.newExpr('Date', [Testing.numLiteral(0)]);
+		expect(node.arguments).toHaveLength(1);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Testing.ifStmt — optional parameters
+// ---------------------------------------------------------------------------
+
+describe('Testing.ifStmt', () => {
+	test('creates minimal IfStatement with no args', () => {
+		const node = Testing.ifStmt();
+		expect(node.type).toBe('IfStatement');
+	});
+
+	test('accepts test and consequent', () => {
+		const node = Testing.ifStmt(
+			Testing.boolLiteral(true),
+			Testing.blockStmt()
+		);
+		expect(node.type).toBe('IfStatement');
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Testing.messages / Testing.messageIds
+// ---------------------------------------------------------------------------
+
+describe('Testing.messages', () => {
+	test('extracts message strings from diagnostics', () => {
+		const result = [
+			{
+				diagnostic: makeDiagnostic({
+					node: { range: [0, 5] } as never,
+					message: 'A'
+				})
+			},
+			{
+				diagnostic: makeDiagnostic({
+					node: { range: [0, 5] } as never,
+					message: 'B'
+				})
+			}
+		];
+		expect(Testing.messages(result)).toEqual(['A', 'B']);
+	});
+
+	test('returns empty array for no diagnostics', () => {
+		expect(Testing.messages([])).toEqual([]);
+	});
+});
+
+describe('Testing.messageIds', () => {
+	test('extracts messageId strings from diagnostics', () => {
+		const result = [
+			{
+				diagnostic: {
+					node: { range: [0, 5] },
+					messageId: 'noThrow'
+				} as never
+			}
+		];
+		expect(Testing.messageIds(result)).toEqual(['noThrow']);
+	});
+});

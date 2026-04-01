@@ -114,10 +114,22 @@ export const merge = (
  *
  * This replaces the common `let depth = 0` mutable counter pattern.
  *
+ * The type parameter `N` narrows the node type the predicate receives.
+ * By default it is `ESTree.Node`, but callers can supply a narrower
+ * type to avoid manual casts inside the predicate.
+ *
  * @example
  * ```ts
  * const effectGenDepth = yield* Ref.make(0)
+ *
+ * // Predicate receives ESTree.Node (default)
  * Visitor.tracked('CallExpression',
+ *   (node) => AST.isCallOf(node, 'Effect', 'gen'),
+ *   effectGenDepth
+ * )
+ *
+ * // Predicate receives narrowed CallExpression
+ * Visitor.tracked<ESTree.CallExpression>('CallExpression',
  *   (node) => AST.isCallOf(node, 'Effect', 'gen'),
  *   effectGenDepth
  * )
@@ -125,15 +137,15 @@ export const merge = (
  *
  * @since 0.1.0
  */
-export const tracked = (
+export const tracked = <N extends ESTree.Node = ESTree.Node>(
 	nodeType: string,
-	predicate: (node: ESTree.Node) => boolean,
+	predicate: (node: N) => boolean,
 	ref: Ref.Ref<number>
 ): EffectVisitor => ({
 	[nodeType]: (node: ESTree.Node) =>
-		predicate(node) ? Ref.update(ref, (n) => n + 1) : Effect.void,
+		predicate(node as N) ? Ref.update(ref, (n) => n + 1) : Effect.void,
 	[`${nodeType}:exit`]: (node: ESTree.Node) =>
-		predicate(node) ? Ref.update(ref, (n) => n - 1) : Effect.void
+		predicate(node as N) ? Ref.update(ref, (n) => n - 1) : Effect.void
 });
 
 /**

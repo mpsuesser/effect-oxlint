@@ -28,6 +28,7 @@ import type {
 import * as Arr from 'effect/Array';
 import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
+import * as P from 'effect/Predicate';
 
 import { fromOxlintContext, RuleContext } from './RuleContext.ts';
 
@@ -243,16 +244,23 @@ export const program = (
 		sourceType: 'module'
 	}) as never;
 
-/** IfStatement */
+/**
+ * IfStatement.
+ *
+ * All parameters are optional — `ifStmt()` produces a minimal
+ * `{ type: 'IfStatement' }` node suitable for enter/exit tracking.
+ *
+ * @since 0.2.0
+ */
 export const ifStmt = (
-	test: unknown,
-	consequent: unknown,
+	test?: unknown,
+	consequent?: unknown,
 	alternate?: unknown
 ): ESTree.IfStatement =>
 	({
 		type: 'IfStatement',
-		test,
-		consequent,
+		test: test ?? null,
+		consequent: consequent ?? null,
 		alternate: alternate ?? null
 	}) as never;
 
@@ -264,14 +272,24 @@ export const binaryExpr = (
 ): ESTree.BinaryExpression =>
 	({ type: 'BinaryExpression', operator, left, right }) as never;
 
-/** NewExpression: `new callee(args)` */
-export const newExpr = (
+/**
+ * NewExpression: `new callee(args)`
+ *
+ * When `callee` is a string it is auto-wrapped in `id()`, so
+ * `newExpr('Date')` is equivalent to `newExpr(id('Date'))`.
+ *
+ * @since 0.2.0
+ */
+export const newExpr: {
+	(callee: string, args?: ReadonlyArray<unknown>): ESTree.NewExpression;
+	(callee: unknown, args?: ReadonlyArray<unknown>): ESTree.NewExpression;
+} = (
 	callee: unknown,
 	args: ReadonlyArray<unknown> = []
 ): ESTree.NewExpression =>
 	({
 		type: 'NewExpression',
-		callee,
+		callee: P.isString(callee) ? id(callee) : callee,
 		arguments: Array.from(args)
 	}) as never;
 
@@ -875,6 +893,39 @@ export const runRuleMulti = (
 	});
 	return diagnostics;
 };
+
+// ---------------------------------------------------------------------------
+// Diagnostic Accessors
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract the diagnostic messages from a result array.
+ *
+ * Shorthand for `result.map(r => r.diagnostic.message)`, returning
+ * `undefined` when a diagnostic uses `messageId` instead of `message`.
+ *
+ * @example
+ * ```ts
+ * const result = Testing.runRule(rule, 'ThrowStatement', Testing.throwStmt())
+ * expect(Testing.messages(result)).toEqual(['Use Effect.fail instead'])
+ * ```
+ *
+ * @since 0.2.0
+ */
+export const messages = (
+	result: ReadonlyArray<ReportedDiagnostic>
+): ReadonlyArray<string | null | undefined> =>
+	Arr.map(result, (r) => r.diagnostic.message);
+
+/**
+ * Extract the diagnostic messageIds from a result array.
+ *
+ * @since 0.2.0
+ */
+export const messageIds = (
+	result: ReadonlyArray<ReportedDiagnostic>
+): ReadonlyArray<string | null | undefined> =>
+	Arr.map(result, (r) => r.diagnostic.messageId);
 
 // ---------------------------------------------------------------------------
 // Assertion Helpers

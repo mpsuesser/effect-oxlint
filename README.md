@@ -83,6 +83,39 @@ const noNodeFs = Rule.banImport('node:fs', {
 const noThrow = Rule.banStatement('ThrowStatement', {
 	message: 'Use Effect.fail instead of throw'
 });
+
+// Ban bare identifier calls (e.g. fetch(), useState())
+const noFetch = Rule.banCallOf('fetch', {
+	message: 'Use Effect HTTP client instead'
+});
+
+// Ban new expressions (e.g. new Date(), new Error())
+const noNewDate = Rule.banNewExpr('Date', {
+	message: 'Use Clock service instead'
+});
+
+// Ban multiple patterns with one rule
+const noImperativeLoops = Rule.banMultiple(
+	{
+		statements: [
+			'ForStatement',
+			'ForInStatement',
+			'ForOfStatement',
+			'WhileStatement',
+			'DoWhileStatement'
+		]
+	},
+	{ message: 'Use Arr.map / Effect.forEach instead' }
+);
+
+// Combine different ban types in a single rule
+const useClockService = Rule.banMultiple(
+	{
+		newExprs: 'Date',
+		members: [['Date', 'now']]
+	},
+	{ message: 'Use Clock service' }
+);
 ```
 
 ### 3. Assemble into a plugin
@@ -211,45 +244,71 @@ const multiFix = Diagnostic.composeFixes(
 );
 ```
 
+## Types
+
+`effect-oxlint` re-exports all `@oxlint/plugins` types so consumers don't need a direct dependency for type imports:
+
+```ts
+import type { ESTree, OxlintPlugin, CreateRule } from 'effect-oxlint';
+
+// ESTree namespace includes all AST node types
+const node: ESTree.CallExpression = /* ... */;
+```
+
 ## Testing
 
 `effect-oxlint` ships a `Testing` module with mock AST builders, rule runners, and assertion helpers.
 
 ```ts
 import { describe, expect, test } from '@effect/vitest';
-import * as Arr from 'effect/Array';
 import { Rule, Testing } from 'effect-oxlint';
 
 describe('no-json-parse', () => {
 	test('reports JSON.parse', () => {
-		const diagnostics = Testing.runRule(
+		const result = Testing.runRule(
 			noJsonParse,
 			'MemberExpression',
-			Testing.Builders.memberExpr('JSON', 'parse')
+			Testing.memberExpr('JSON', 'parse')
 		);
-		Testing.expectDiagnostics(diagnostics, [
-			{ message: 'Use Schema for JSON' }
-		]);
+		Testing.expectDiagnostics(result, [{ message: 'Use Schema for JSON' }]);
+		// Or use the messages() helper for quick access
+		expect(Testing.messages(result)).toEqual(['Use Schema for JSON']);
 	});
 
 	test('ignores other member expressions', () => {
-		const diagnostics = Testing.runRule(
+		const result = Testing.runRule(
 			noJsonParse,
 			'MemberExpression',
-			Testing.Builders.memberExpr('console', 'log')
+			Testing.memberExpr('console', 'log')
 		);
-		expect(Arr.length(diagnostics)).toBe(0);
+		Testing.expectNoDiagnostics(result);
 	});
 });
 ```
 
-Available builders include `id`, `memberExpr`, `computedMemberExpr`, `chainedMemberExpr`, `callExpr`, `importDecl`, `throwStmt`, `literal`, `objectExpr`, `program`, and more.
+### Node builders accept ergonomic shorthands
+
+```ts
+// newExpr accepts a string — auto-wrapped in id()
+Testing.newExpr('Date'); // equivalent to Testing.newExpr(Testing.id('Date'))
+
+// ifStmt params are all optional — useful for enter/exit tracking tests
+Testing.ifStmt(); // minimal IfStatement node
+
+// program() accepts a comments parameter for comment-based rules
+Testing.program(
+	[Testing.exprStmt(Testing.callExpr('foo'))],
+	[Testing.comment('Line', ' eslint-disable')]
+);
+```
+
+Available builders include `id`, `memberExpr`, `computedMemberExpr`, `chainedMemberExpr`, `callExpr`, `callOfMember`, `importDecl`, `newExpr`, `throwStmt`, `tryStmt`, `ifStmt`, `program`, `objectExpr`, and more.
 
 ## Modules
 
 | Module        | Purpose                                                                                                                   |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `Rule`        | Core rule builder (`define`, `meta`, `banMember`, `banImport`, `banStatement`)                                            |
+| `Rule`        | Core rule builder (`define`, `meta`, `banMember`, `banImport`, `banStatement`, `banCallOf`, `banNewExpr`, `banMultiple`)  |
 | `Visitor`     | Composable visitors (`on`, `onExit`, `merge`, `tracked`, `filter`, `accumulate`)                                          |
 | `AST`         | `Option`-returning pattern matchers (`matchMember`, `matchCallOf`, `matchImport`, `narrow`, `memberPath`, `findAncestor`) |
 | `Diagnostic`  | Diagnostic construction and autofix helpers                                                                               |
@@ -259,7 +318,7 @@ Available builders include `id`, `memberExpr`, `computedMemberExpr`, `chainedMem
 | `Plugin`      | `define` and `merge` for plugin assembly                                                                                  |
 | `Comment`     | Comment type predicates (`isLine`, `isBlock`, `isJSDoc`, `isDisableDirective`)                                            |
 | `Token`       | Token type predicates (`isKeyword`, `isPunctuator`, `isIdentifier`, `isString`)                                           |
-| `Testing`     | Mock builders, `runRule`, `expectDiagnostics` for test harnesses                                                          |
+| `Testing`     | Mock builders, `runRule`, `expectDiagnostics`, `messages` for test harnesses                                              |
 
 ## Development
 
