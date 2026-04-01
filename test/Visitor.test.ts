@@ -5,14 +5,14 @@ import * as R from 'effect/Record';
 import * as Ref from 'effect/Ref';
 
 import * as Visitor from '../src/Visitor.ts';
-import { callOfMember, mockRuleContextLayer, throwStmt } from './_builders.ts';
+import { Testing } from '../src/index.ts';
 
 /**
  * Most visitor tests need RuleContext in scope because EffectHandler's
  * return type is `Effect<void, never, RuleContext>`. We provide a mock
  * layer so the tests can yield handlers without hitting a missing service.
  */
-const TestLayer = mockRuleContextLayer();
+const TestLayer = Testing.mockRuleContextLayer();
 
 // ---------------------------------------------------------------------------
 // Visitor.on
@@ -65,7 +65,7 @@ describe('Visitor.merge', () => {
 
 			const handler = merged['ThrowStatement'];
 			if (handler) {
-				yield* handler(throwStmt() as never);
+				yield* handler(Testing.throwStmt() as never);
 			}
 
 			const result = yield* Ref.get(log);
@@ -105,7 +105,7 @@ describe('Visitor.tracked', () => {
 					depth
 				);
 
-				const node = callOfMember('Effect', 'gen');
+				const node = Testing.callOfMember('Effect', 'gen');
 
 				// Enter handler — increment
 				const enterHandler = visitor['CallExpression'];
@@ -144,7 +144,7 @@ describe('Visitor.tracked', () => {
 				depth
 			);
 
-			const node = callOfMember('console', 'log');
+			const node = Testing.callOfMember('console', 'log');
 			const enterHandler = visitor['CallExpression'];
 			if (enterHandler) {
 				yield* enterHandler(node as never);
@@ -198,7 +198,7 @@ describe('Visitor.filter', () => {
 			expect(visitor['ThrowStatement']).toBeDefined();
 		}).pipe(
 			Effect.provide(
-				mockRuleContextLayer({ filename: '/custom/file.ts' })
+				Testing.mockRuleContextLayer({ filename: '/custom/file.ts' })
 			)
 		)
 	);
@@ -259,7 +259,7 @@ describe('Visitor.accumulate', () => {
 			const enterHandler = visitor['CallExpression'];
 			expect(enterHandler).toBeDefined();
 			if (enterHandler) {
-				yield* enterHandler(callOfMember('a', 'b') as never);
+				yield* enterHandler(Testing.callOfMember('a', 'b') as never);
 			}
 
 			const exitHandler = visitor['Program:exit'];

@@ -3,7 +3,7 @@ import * as Arr from 'effect/Array';
 import * as Effect from 'effect/Effect';
 
 import * as Rule from '../src/Rule.ts';
-import { importDecl, memberExpr, runRule, throwStmt } from './_builders.ts';
+import { Testing } from '../src/index.ts';
 
 // ---------------------------------------------------------------------------
 // Rule.meta
@@ -79,7 +79,11 @@ describe('Rule.banStatement', () => {
 		const rule = Rule.banStatement('ThrowStatement', {
 			message: 'Use Effect.fail instead'
 		});
-		const diagnostics = runRule(rule, 'ThrowStatement', throwStmt());
+		const diagnostics = Testing.runRule(
+			rule,
+			'ThrowStatement',
+			Testing.throwStmt()
+		);
 		expect(Arr.length(diagnostics)).toBe(1);
 		expect(diagnostics[0]?.diagnostic.message).toBe(
 			'Use Effect.fail instead'
@@ -91,7 +95,11 @@ describe('Rule.banStatement', () => {
 			message: 'Use Effect.try'
 		});
 		// ThrowStatement handler does not exist on this rule
-		const diagnostics = runRule(rule, 'ThrowStatement', throwStmt());
+		const diagnostics = Testing.runRule(
+			rule,
+			'ThrowStatement',
+			Testing.throwStmt()
+		);
 		expect(Arr.length(diagnostics)).toBe(0);
 	});
 
@@ -120,10 +128,10 @@ describe('Rule.banMember', () => {
 		const rule = Rule.banMember('JSON', ['parse', 'stringify'], {
 			message: 'Use Schema for JSON (EF-19)'
 		});
-		const diagnostics = runRule(
+		const diagnostics = Testing.runRule(
 			rule,
 			'MemberExpression',
-			memberExpr('JSON', 'parse')
+			Testing.memberExpr('JSON', 'parse')
 		);
 		expect(Arr.length(diagnostics)).toBe(1);
 		expect(diagnostics[0]?.diagnostic.message).toBe(
@@ -135,10 +143,10 @@ describe('Rule.banMember', () => {
 		const rule = Rule.banMember('JSON', ['parse', 'stringify'], {
 			message: 'Use Schema'
 		});
-		const diagnostics = runRule(
+		const diagnostics = Testing.runRule(
 			rule,
 			'MemberExpression',
-			memberExpr('JSON', 'stringify')
+			Testing.memberExpr('JSON', 'stringify')
 		);
 		expect(Arr.length(diagnostics)).toBe(1);
 	});
@@ -147,10 +155,10 @@ describe('Rule.banMember', () => {
 		const rule = Rule.banMember('JSON', 'parse', {
 			message: 'msg'
 		});
-		const diagnostics = runRule(
+		const diagnostics = Testing.runRule(
 			rule,
 			'MemberExpression',
-			memberExpr('console', 'log')
+			Testing.memberExpr('console', 'log')
 		);
 		expect(Arr.length(diagnostics)).toBe(0);
 	});
@@ -159,10 +167,10 @@ describe('Rule.banMember', () => {
 		const rule = Rule.banMember('JSON', 'parse', {
 			message: 'msg'
 		});
-		const diagnostics = runRule(
+		const diagnostics = Testing.runRule(
 			rule,
 			'MemberExpression',
-			memberExpr('JSON', 'stringify')
+			Testing.memberExpr('JSON', 'stringify')
 		);
 		expect(Arr.length(diagnostics)).toBe(0);
 	});
@@ -171,10 +179,10 @@ describe('Rule.banMember', () => {
 		const rule = Rule.banMember('Math', 'random', {
 			message: 'Use Random service'
 		});
-		const diagnostics = runRule(
+		const diagnostics = Testing.runRule(
 			rule,
 			'MemberExpression',
-			memberExpr('Math', 'random')
+			Testing.memberExpr('Math', 'random')
 		);
 		expect(Arr.length(diagnostics)).toBe(1);
 	});
@@ -189,10 +197,10 @@ describe('Rule.banImport', () => {
 		const rule = Rule.banImport('node:fs', {
 			message: 'Use Effect FileSystem service'
 		});
-		const diagnostics = runRule(
+		const diagnostics = Testing.runRule(
 			rule,
 			'ImportDeclaration',
-			importDecl('node:fs')
+			Testing.importDecl('node:fs')
 		);
 		expect(Arr.length(diagnostics)).toBe(1);
 		expect(diagnostics[0]?.diagnostic.message).toBe(
@@ -204,10 +212,10 @@ describe('Rule.banImport', () => {
 		const rule = Rule.banImport((src) => src.startsWith('node:'), {
 			message: 'No node: imports'
 		});
-		const diagnostics = runRule(
+		const diagnostics = Testing.runRule(
 			rule,
 			'ImportDeclaration',
-			importDecl('node:path')
+			Testing.importDecl('node:path')
 		);
 		expect(Arr.length(diagnostics)).toBe(1);
 	});
@@ -216,10 +224,10 @@ describe('Rule.banImport', () => {
 		const rule = Rule.banImport('node:fs', {
 			message: 'msg'
 		});
-		const diagnostics = runRule(
+		const diagnostics = Testing.runRule(
 			rule,
 			'ImportDeclaration',
-			importDecl('effect/Array')
+			Testing.importDecl('effect/Array')
 		);
 		expect(Arr.length(diagnostics)).toBe(0);
 	});
@@ -228,10 +236,10 @@ describe('Rule.banImport', () => {
 		const rule = Rule.banImport((src) => src.startsWith('node:'), {
 			message: 'msg'
 		});
-		const diagnostics = runRule(
+		const diagnostics = Testing.runRule(
 			rule,
 			'ImportDeclaration',
-			importDecl('effect')
+			Testing.importDecl('effect')
 		);
 		expect(Arr.length(diagnostics)).toBe(0);
 	});
