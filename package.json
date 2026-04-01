@@ -12,7 +12,7 @@
   },
   "scripts": {
     "build": "vp build",
-    "check": "vp check",
+    "check": "vp check --fix",
     "test": "vitest run",
     "prepare": "effect-language-service patch"
   },
