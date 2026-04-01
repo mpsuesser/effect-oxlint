@@ -1,0 +1,36 @@
+{
+  "$schema": "https://www.schemastore.org/package.json",
+  "name": "effect-oxlint",
+  "version": "0.1.0",
+  "description": "Effect-first library for writing oxlint custom lint rules",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "vp build",
+    "check": "vp check",
+    "test": "vitest run",
+    "prepare": "effect-language-service patch"
+  },
+  "dependencies": {
+    "@oxlint/plugins": "^1.57.0",
+    "effect": "4.0.0-beta.43"
+  },
+  "devDependencies": {
+    "@effect/language-service": "^0.80.0",
+    "@effect/vitest": "4.0.0-beta.43",
+    "@types/bun": "^1.3.10",
+    "typescript": "^5.9.3",
+    "vite-plus": "^0.1.14",
+    "vitest": "^4.1.0"
+  },
+  "overrides": {
+    "effect": "4.0.0-beta.43",
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.1.14"
+  },
+  "packageManager": "bun@1.3.11"
+}
