@@ -14,16 +14,18 @@
     "build": "vp build",
     "check": "vp check --fix",
     "test": "vitest run",
-    "prepare": "effect-language-service patch"
+    "typecheck": "tsgo",
+    "prepare": "effect-tsgo patch"
   },
   "dependencies": {
     "@oxlint/plugins": "^1.57.0",
     "effect": "4.0.0-beta.43"
   },
   "devDependencies": {
-    "@effect/language-service": "^0.80.0",
+    "@effect/tsgo": "^0.1.1",
     "@effect/vitest": "4.0.0-beta.43",
     "@types/bun": "^1.3.10",
+    "@typescript/native-preview": "^7.0.0-dev.20260401.1",
     "typescript": "^5.9.3",
     "vite-plus": "^0.1.14",
     "vitest": "^4.1.0"

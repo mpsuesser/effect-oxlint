@@ -102,15 +102,13 @@ export const merge = (
 ): EffectVisitor =>
 	visitors.reduce<EffectVisitor>(
 		(acc, visitor) =>
-			pipe(
-				R.union(
-					acc as Record<string, EffectHandler>,
-					pipe(
-						visitor as Record<string, EffectHandler | undefined>,
-						R.filter((h): h is EffectHandler => h !== undefined)
-					),
-					(left, right) => sequenceHandlers(left, right)
-				)
+			R.union(
+				acc as Record<string, EffectHandler>,
+				pipe(
+					visitor as Record<string, EffectHandler | undefined>,
+					R.filter((h): h is EffectHandler => h !== undefined)
+				),
+				(left, right) => sequenceHandlers(left, right)
 			),
 		{}
 	);
