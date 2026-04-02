@@ -50,6 +50,20 @@ See [AGENTS.md](./AGENTS.md) for detailed formatting, import ordering, naming co
 - JSDoc with `@since` on every export
 - `readonly` on all fields and parameters
 
+## Editor Setup
+
+The `.vscode/` directory is gitignored. If you use VS Code, create `.vscode/settings.json` with:
+
+```json
+{
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.experimental.useTsgo": true
+}
+```
+
+This enables the workspace TypeScript SDK and tsgo for native type-checking.
+
 ## Reporting Issues
 
 Use the [GitHub issue templates](https://github.com/mpsuesser/effect-oxlint/issues/new/choose) for bug reports and feature requests.
