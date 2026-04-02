@@ -1,5 +1,9 @@
 # effect-oxlint
 
+[![npm](https://img.shields.io/npm/v/effect-oxlint)](https://www.npmjs.com/package/effect-oxlint)
+[![JSR](https://jsr.io/badges/@effect-oxlint/effect-oxlint)](https://jsr.io/@effect-oxlint/effect-oxlint)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+
 Write [oxlint](https://oxc.rs/docs/guide/usage/linter) custom lint rules with [Effect v4](https://effect.website).
 
 `effect-oxlint` wraps `@oxlint/plugins` in Effect idioms so rule authors get typed errors, composable visitors, `Option`-safe AST matching, and `Ref`-based state without any mutable variables.
@@ -17,15 +21,15 @@ Write [oxlint](https://oxc.rs/docs/guide/usage/linter) custom lint rules with [E
 ## Install
 
 ```sh
+# npm / yarn / pnpm
+npm install effect-oxlint effect@4.0.0-beta.43
+
+# bun
 bun add effect-oxlint effect@4.0.0-beta.43
+
+# jsr (Deno)
+deno add jsr:@effect-oxlint/effect-oxlint
 ```
-
-`effect-oxlint` depends on:
-
-| Package           | Version         |
-| ----------------- | --------------- |
-| `effect`          | `4.0.0-beta.43` |
-| `@oxlint/plugins` | `^1.57.0`       |
 
 ## Quick Start
 
@@ -335,14 +339,16 @@ bun install                # install dependencies
 bun run check              # lint + format + typecheck (auto-fix)
 bun run test               # run all tests
 bun run typecheck          # tsgo type-check only
-bun run build              # build
-
 # Single test file
 bunx vitest run test/Rule.test.ts
 
 # By test name
 bunx vitest run -t "reports for matching"
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## License
 
