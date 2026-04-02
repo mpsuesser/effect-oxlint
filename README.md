@@ -20,18 +20,11 @@ Write [oxlint](https://oxc.rs/docs/guide/usage/linter) custom lint rules with [E
 
 ## Install
 
-```sh
-# npm / yarn / pnpm
-npm install effect-oxlint effect@4.0.0-beta.43
-```
-```sh
-# bun
-bun add effect-oxlint effect@4.0.0-beta.43
-```
-```sh
-# deno (jsr)
-deno add jsr:@effect-oxlint/effect-oxlint
-```
+| | |
+| --- | --- |
+| npm / yarn / pnpm | `npm install effect-oxlint effect@4.0.0-beta.43` |
+| bun | `bun add effect-oxlint effect@4.0.0-beta.43` |
+| deno (jsr) | `deno add jsr:@effect-oxlint/effect-oxlint` |
 
 ## Quick Start
 
