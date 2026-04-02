@@ -23,9 +23,11 @@ Write [oxlint](https://oxc.rs/docs/guide/usage/linter) custom lint rules with [E
 ```sh
 npm install effect-oxlint effect@4.0.0-beta.43
 ```
+
 ```sh
 bun add effect-oxlint effect@4.0.0-beta.43
 ```
+
 ```sh
 deno add jsr:@effect-oxlint/effect-oxlint
 ```
@@ -160,7 +162,7 @@ Replace mutable `let depth = 0` counters with `Visitor.tracked`:
 import * as Ref from 'effect/Ref';
 import { AST, Visitor } from 'effect-oxlint';
 
-const depthRef = yield* Ref.make(0);
+const depthRef = yield * Ref.make(0);
 const tracker = Visitor.tracked(
 	'CallExpression',
 	// node is typed as ESTree.CallExpression
@@ -177,13 +179,15 @@ Collect data during traversal, then analyze at `Program:exit`:
 ```ts
 import { Visitor, AST } from 'effect-oxlint';
 
-const visitor = yield* Visitor.accumulate(
-	'ExportNamedDeclaration',
-	(node) => AST.narrow(node, 'ExportNamedDeclaration'),
-	function* (exports) {
-		// all exports collected — analyze them here
-	}
-);
+const visitor =
+	yield *
+	Visitor.accumulate(
+		'ExportNamedDeclaration',
+		(node) => AST.narrow(node, 'ExportNamedDeclaration'),
+		function* (exports) {
+			// all exports collected — analyze them here
+		}
+	);
 ```
 
 ### Filter by filename
@@ -193,10 +197,9 @@ Restrict a visitor to specific files:
 ```ts
 import { Visitor } from 'effect-oxlint';
 
-const visitor = yield* Visitor.filter(
-	(filename) => !filename.endsWith('.test.ts'),
-	mainVisitor
-);
+const visitor =
+	yield *
+	Visitor.filter((filename) => !filename.endsWith('.test.ts'), mainVisitor);
 ```
 
 ## AST Matching

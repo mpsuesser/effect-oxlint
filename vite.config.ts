@@ -22,18 +22,13 @@ export default defineConfig({
 		quoteProps: 'preserve',
 		semi: true,
 		trailingComma: 'none',
+		ignore: ['*.md'],
 		overrides: [
 			{
 				files: ['*.json', '*.jsonc'],
 				options: {
 					useTabs: false,
 					tabWidth: 2
-				}
-			},
-			{
-				files: ['*.md'],
-				options: {
-					embeddedLanguageFormatting: 'off'
 				}
 			}
 		]

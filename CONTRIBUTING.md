@@ -56,9 +56,9 @@ The `.vscode/` directory is gitignored. If you use VS Code, create `.vscode/sett
 
 ```json
 {
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.enablePromptUseWorkspaceTsdk": true,
-  "typescript.experimental.useTsgo": true
+	"typescript.tsdk": "node_modules/typescript/lib",
+	"typescript.enablePromptUseWorkspaceTsdk": true,
+	"typescript.experimental.useTsgo": true
 }
 ```
 
