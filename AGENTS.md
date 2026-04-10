@@ -110,7 +110,7 @@ Every source file follows this layout:
 - **Ref for mutable state**: `Ref.make` / `Ref.update` in effectful contexts
 - **Effect.void for no-ops**: Not `Effect.succeed(undefined)`
 - **pipe for composition**: Especially Option chains and Effect pipelines
-- **ServiceMap.Service for services**: With unique namespaced string key
+- **Context.Service for services**: With unique namespaced string key
 
 ### Effect Module Usage (not native JS)
 
@@ -149,7 +149,7 @@ Every source file follows this layout:
 ### Oxlint-Specific Patterns
 
 - Re-export oxlint types with `Oxlint` prefix to avoid collision: `OxlintPlugin`, `OxlintComment`
-- `RuleContext` is a `ServiceMap.Service` wrapping oxlint's context
+- `RuleContext` is a `Context.Service` wrapping oxlint's context
 - `withSourceCode` pattern: `Effect.service(RuleContext).pipe(Effect.map(ctx => fn(ctx.sourceCode)))`
 - Visitors are `Record<string, (node: ESTree.Node) => Effect<void>>`
 - `toOxlintVisitor` converts Effect visitors to plain oxlint visitors at the boundary
