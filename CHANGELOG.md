@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-- align package metadata and docs with `effect@4.0.0-beta.47`
+## 0.1.1 — Effect beta.47 compatibility
+
+- Aligned package metadata and compatibility with `effect@4.0.0-beta.47`. (#2)
 
 ## 0.1.0 — Initial Release
 
