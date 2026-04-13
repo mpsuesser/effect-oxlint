@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- align package metadata and docs with `effect@4.0.0-beta.47`
+
 ## 0.1.0 — Initial Release
 
 Effect-first library for writing oxlint custom lint rules.
