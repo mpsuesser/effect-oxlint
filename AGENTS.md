@@ -35,7 +35,7 @@ test/          11 test files — one per source module
 vite.config.ts Lint rules, formatting, test config (vite-plus)
 ```
 
-Single-package project. Bun is the package manager (`bun@1.3.11`). No monorepo tooling.
+Single-package project. Bun is the package manager (`bun@1.3.12`). No monorepo tooling.
 
 ## Code Style
 
