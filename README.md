@@ -348,6 +348,19 @@ bunx vitest run test/Rule.test.ts
 bunx vitest run -t "reports for matching"
 ```
 
+## Requirements
+
+`effect-oxlint` is distributed as **TypeScript source** (no compiled `dist/`). This keeps source maps, JSDoc, and type information perfectly aligned with the code you import — and it's how JSR prefers packages to ship.
+
+Consumers must use a TypeScript-aware runtime or bundler:
+
+- **Bun** — works out of the box.
+- **Deno** (via JSR) — works out of the box.
+- **Node.js with a bundler** (Vite, esbuild, webpack, Rollup, tsup, etc.) — works out of the box.
+- **Node.js directly** — run via `tsx`, `ts-node`, or compile your own code; ensure `tsconfig.json` has `"moduleResolution": "bundler"` (or `"nodenext"`) so TS resolves the `.ts` `exports` entry.
+
+`effect` is a peer dependency and must be installed alongside `effect-oxlint` at a matching version.
+
 ## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md).
