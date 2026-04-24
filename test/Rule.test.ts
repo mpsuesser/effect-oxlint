@@ -252,6 +252,90 @@ describe('Rule.banImport', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Rule.banCallOfMember
+// ---------------------------------------------------------------------------
+
+describe('Rule.banCallOfMember', () => {
+	test('reports for matching obj.prop(...) call', () => {
+		const rule = Rule.banCallOfMember('Effect', 'runSync', {
+			message: 'Keep effects composable'
+		});
+		const result = Testing.runRule(
+			rule,
+			'CallExpression',
+			Testing.callOfMember('Effect', 'runSync')
+		);
+		expect(Arr.length(result)).toBe(1);
+		expect(Testing.messages(result)).toEqual([
+			Option.some('Keep effects composable')
+		]);
+	});
+
+	test('reports for any property in an allowed list', () => {
+		const rule = Rule.banCallOfMember('console', ['log', 'error'], {
+			message: 'Use Effect.log'
+		});
+		const r1 = Testing.runRule(
+			rule,
+			'CallExpression',
+			Testing.callOfMember('console', 'log')
+		);
+		expect(Arr.length(r1)).toBe(1);
+
+		const r2 = Testing.runRule(
+			rule,
+			'CallExpression',
+			Testing.callOfMember('console', 'error')
+		);
+		expect(Arr.length(r2)).toBe(1);
+	});
+
+	test('does not report for a non-matching object', () => {
+		const rule = Rule.banCallOfMember('Effect', 'runSync', {
+			message: 'msg'
+		});
+		const result = Testing.runRule(
+			rule,
+			'CallExpression',
+			Testing.callOfMember('Other', 'runSync')
+		);
+		expect(Arr.length(result)).toBe(0);
+	});
+
+	test('does not report for a non-matching property', () => {
+		const rule = Rule.banCallOfMember('Effect', 'runSync', {
+			message: 'msg'
+		});
+		const result = Testing.runRule(
+			rule,
+			'CallExpression',
+			Testing.callOfMember('Effect', 'gen')
+		);
+		expect(Arr.length(result)).toBe(0);
+	});
+
+	test('does not report for bare identifier calls', () => {
+		const rule = Rule.banCallOfMember('Effect', 'runSync', {
+			message: 'msg'
+		});
+		const result = Testing.runRule(
+			rule,
+			'CallExpression',
+			Testing.callExpr('runSync')
+		);
+		expect(Arr.length(result)).toBe(0);
+	});
+
+	test('generated name uses kebab-case', () => {
+		const rule = Rule.banCallOfMember('Effect', ['runSync', 'runPromise'], {
+			message: 'msg'
+		});
+		// Name is an implementation detail; we only check it stays kebab-clean.
+		expect(rule.meta?.docs?.description).toBe('msg');
+	});
+});
+
+// ---------------------------------------------------------------------------
 // Rule.banCallOf
 // ---------------------------------------------------------------------------
 
@@ -509,6 +593,39 @@ describe('Rule.banMultiple', () => {
 			{ name: 'my-custom-rule', message: 'msg' }
 		);
 		expect(rule.meta?.type).toBe('suggestion');
+	});
+
+	test('bans member call patterns via memberCalls', () => {
+		const rule = Rule.banMultiple(
+			{
+				memberCalls: [
+					['Effect', ['runSync', 'runPromise']],
+					['console', 'log']
+				]
+			},
+			{ message: 'Keep effects composable / use Effect.log' }
+		);
+
+		const r1 = Testing.runRule(
+			rule,
+			'CallExpression',
+			Testing.callOfMember('Effect', 'runSync')
+		);
+		expect(Arr.length(r1)).toBe(1);
+
+		const r2 = Testing.runRule(
+			rule,
+			'CallExpression',
+			Testing.callOfMember('console', 'log')
+		);
+		expect(Arr.length(r2)).toBe(1);
+
+		const r3 = Testing.runRule(
+			rule,
+			'CallExpression',
+			Testing.callOfMember('Effect', 'gen')
+		);
+		expect(Arr.length(r3)).toBe(0);
 	});
 });
 

@@ -321,6 +321,66 @@ export const banCallOf = (
 };
 
 /**
+ * Create a rule that bans `obj.prop(...)` method-call patterns.
+ *
+ * Matches `CallExpression` nodes whose callee is a static member expression
+ * `obj.prop` where `obj` is an identifier with the given name and `prop`
+ * matches one of the given property names.
+ *
+ * This is the "call of member" counterpart to `banMember` (which bans
+ * the bare member access `obj.prop` regardless of whether it's called)
+ * and `banCallOf` (which bans bare identifier calls).
+ *
+ * @example
+ * ```ts
+ * // Ban `Effect.runSync(...)`
+ * Rule.banCallOfMember('Effect', 'runSync', { message: 'Keep effects composable' })
+ *
+ * // Ban `console.log(...)` and `console.error(...)`
+ * Rule.banCallOfMember('console', ['log', 'error'], { message: 'Use Effect.log' })
+ * ```
+ *
+ * @since 0.2.0
+ */
+export const banCallOfMember = (
+	obj: string,
+	prop: string | ReadonlyArray<string>,
+	opts: {
+		readonly message: string;
+		readonly meta?:
+			| { readonly type?: 'problem' | 'suggestion' }
+			| undefined;
+	}
+): CreateRule =>
+	define({
+		name: `ban-call-${kebabList([obj, ...(P.isString(prop) ? [prop] : prop)])}`,
+		meta: meta({
+			type: opts.meta?.type ?? 'suggestion',
+			description: opts.message
+		}),
+		create: function* () {
+			const ctx = yield* RuleContext;
+			return {
+				CallExpression: (node: ESTree.Node) =>
+					pipe(
+						AST.narrow(node, 'CallExpression'),
+						Option.flatMap(AST.matchCallOf(obj, prop)),
+						Option.match({
+							onNone: () => Effect.void,
+							onSome: (matched) =>
+								ctx.report(
+									makeDiagnostic({
+										node: matched,
+										message: opts.message
+									})
+								)
+						})
+					)
+			};
+		}
+	});
+
+/**
  * Create a rule that bans `new` expressions with the given callee name.
  *
  * Matches `NewExpression` nodes whose callee is an identifier in
@@ -422,6 +482,12 @@ export interface BanMultipleSpec {
 	readonly newExprs?: string | ReadonlyArray<string> | undefined;
 	/** Member expressions to ban: `[object, property | properties]` tuples. */
 	readonly members?:
+		| ReadonlyArray<
+				readonly [obj: string, prop: string | ReadonlyArray<string>]
+		  >
+		| undefined;
+	/** Member call expressions to ban: `[object, property | properties]` tuples. */
+	readonly memberCalls?:
 		| ReadonlyArray<
 				readonly [obj: string, prop: string | ReadonlyArray<string>]
 		  >
@@ -573,6 +639,27 @@ export const banMultiple = (
 						)
 					: [];
 
+			// Member-call bans
+			const memberCallVisitors: ReadonlyArray<EffectVisitor> =
+				spec.memberCalls !== undefined
+					? Arr.map(
+							spec.memberCalls,
+							([obj, prop]): EffectVisitor => ({
+								CallExpression: (node: ESTree.Node) =>
+									pipe(
+										AST.narrow(node, 'CallExpression'),
+										Option.flatMap(
+											AST.matchCallOf(obj, prop)
+										),
+										Option.match({
+											onNone: () => Effect.void,
+											onSome: (matched) => report(matched)
+										})
+									)
+							})
+						)
+					: [];
+
 			// Import bans
 			const importVisitors: ReadonlyArray<EffectVisitor> =
 				spec.imports !== undefined
@@ -597,6 +684,7 @@ export const banMultiple = (
 				...callVisitors,
 				...newExprVisitors,
 				...memberVisitors,
+				...memberCallVisitors,
 				...importVisitors
 			);
 		}
