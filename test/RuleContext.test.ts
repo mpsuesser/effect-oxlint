@@ -12,7 +12,7 @@ import {
 	text
 } from '../src/RuleContext.ts';
 import { make as makeDiagnostic } from '../src/Diagnostic.ts';
-import { Testing } from '../src/index.ts';
+import * as Testing from '../src/Testing.ts';
 
 const TestLayer = Testing.mockRuleContextLayer({
 	filename: '/project/src/app.ts',

@@ -24,26 +24,20 @@ export * as Plugin from './Plugin.ts';
 /** Core rule builder — `Rule.define` is the primary entry point. */
 export * as Rule from './Rule.ts';
 
-/** Effect service wrapping the oxlint rule context. */
+/**
+ * Effect service wrapping the oxlint rule context.
+ *
+ * Use `yield* RuleContext` inside a rule's `create` generator or visitor
+ * handler to access the full context (`.filename`, `.cwd`, `.report`,
+ * `.sourceCode`, …).
+ */
 export { RuleContext } from './RuleContext.ts';
-export {
-	ast,
-	cwd,
-	filename,
-	id,
-	report,
-	sourceCode,
-	text
-} from './RuleContext.ts';
 
 /** Scope analysis helpers with Option. */
 export * as Scope from './Scope.ts';
 
 /** Effect-wrapped SourceCode queries with Option. */
 export * as SourceCode from './SourceCode.ts';
-
-/** Testing infrastructure — builders, runners, assertion helpers. */
-export * as Testing from './Testing.ts';
 
 /** Token type predicates and helpers. */
 export * as Token from './Token.ts';

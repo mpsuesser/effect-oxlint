@@ -2,7 +2,7 @@ import { describe, expect, it, test } from '@effect/vitest';
 import * as Effect from 'effect/Effect';
 import * as Option from 'effect/Option';
 
-import { Testing } from '../src/index.ts';
+import * as Testing from '../src/Testing.ts';
 import * as Rule from '../src/Rule.ts';
 import { RuleContext } from '../src/RuleContext.ts';
 import { make as makeDiagnostic } from '../src/Diagnostic.ts';

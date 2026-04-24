@@ -268,12 +268,13 @@ const node: ESTree.CallExpression = /* ... */;
 
 ## Testing
 
-`effect-oxlint` ships a `Testing` module with mock AST builders, rule runners, and assertion helpers.
+`effect-oxlint` ships a `Testing` module with mock AST builders, rule runners, and assertion helpers. It's exposed as a dedicated subpath export so production bundles don't pull in test-only code:
 
 ```ts
 import { describe, expect, test } from '@effect/vitest';
 import * as Option from 'effect/Option';
-import { Rule, Testing } from 'effect-oxlint';
+import { Rule } from 'effect-oxlint';
+import * as Testing from 'effect-oxlint/testing';
 
 describe('no-json-parse', () => {
 	test('reports JSON.parse', () => {
@@ -332,7 +333,7 @@ Available builders include `id`, `memberExpr`, `computedMemberExpr`, `chainedMem
 | `Plugin`      | `define` and `merge` for plugin assembly                                                                                  |
 | `Comment`     | Comment type predicates (`isLine`, `isBlock`, `isJSDoc`, `isDisableDirective`)                                            |
 | `Token`       | Token type predicates (`isKeyword`, `isPunctuator`, `isIdentifier`, `isString`)                                           |
-| `Testing`     | Mock builders, `runRule`, `expectDiagnostics`, `messages` for test harnesses                                              |
+| `Testing`     | Mock builders, `runRule`, `expectDiagnostics`, `messages` for test harnesses — **import from `effect-oxlint/testing`**  |
 
 ## Development
 

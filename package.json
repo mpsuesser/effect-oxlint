@@ -37,6 +37,10 @@
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts"
+    },
+    "./testing": {
+      "types": "./src/Testing.ts",
+      "import": "./src/Testing.ts"
     }
   },
   "scripts": {

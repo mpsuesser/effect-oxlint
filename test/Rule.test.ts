@@ -9,7 +9,7 @@ import { make as makeDiagnostic } from '../src/Diagnostic.ts';
 import * as Rule from '../src/Rule.ts';
 import { RuleContext } from '../src/RuleContext.ts';
 import * as Visitor from '../src/Visitor.ts';
-import { Testing } from '../src/index.ts';
+import * as Testing from '../src/Testing.ts';
 
 // ---------------------------------------------------------------------------
 // Rule.meta

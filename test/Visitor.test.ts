@@ -5,7 +5,7 @@ import * as R from 'effect/Record';
 import * as Ref from 'effect/Ref';
 
 import * as Visitor from '../src/Visitor.ts';
-import { Testing } from '../src/index.ts';
+import * as Testing from '../src/Testing.ts';
 
 /**
  * Most visitor tests need RuleContext in scope because EffectHandler's

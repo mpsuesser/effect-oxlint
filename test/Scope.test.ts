@@ -3,7 +3,7 @@ import { pipe } from 'effect/Function';
 import * as Option from 'effect/Option';
 
 import * as Scope from '../src/Scope.ts';
-import { Testing } from '../src/index.ts';
+import * as Testing from '../src/Testing.ts';
 
 // ---------------------------------------------------------------------------
 // Shared reference helpers

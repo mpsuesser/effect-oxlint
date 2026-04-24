@@ -2,7 +2,7 @@ import { describe, expect, test } from '@effect/vitest';
 import * as Option from 'effect/Option';
 
 import * as AST from '../src/AST.ts';
-import { Testing } from '../src/index.ts';
+import * as Testing from '../src/Testing.ts';
 
 // ---------------------------------------------------------------------------
 // matchMember

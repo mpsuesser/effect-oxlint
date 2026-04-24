@@ -1,7 +1,7 @@
 import { describe, expect, test } from '@effect/vitest';
 
 import * as Comment from '../src/Comment.ts';
-import { Testing } from '../src/index.ts';
+import * as Testing from '../src/Testing.ts';
 
 // ---------------------------------------------------------------------------
 // Type predicates

@@ -3,7 +3,7 @@ import * as Effect from 'effect/Effect';
 import * as Option from 'effect/Option';
 
 import * as SourceCode from '../src/SourceCode.ts';
-import { Testing } from '../src/index.ts';
+import * as Testing from '../src/Testing.ts';
 
 const TestLayer = Testing.mockRuleContextLayer();
 
