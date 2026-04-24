@@ -1,12 +1,33 @@
 # Changelog
 
-## Unreleased
+All notable changes to this project are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.1.1 — Effect beta.47 compatibility
+## [Unreleased]
+
+### Added
+
+- `exports.types` condition and top-level `types` field in `package.json` so TypeScript tools that don't read conditional exports still pick up type information.
+- `Requirements` section in `README.md` documenting that `effect-oxlint` ships TypeScript source (no compiled `dist/`) and listing supported runtimes / bundler configurations.
+
+### Changed
+
+- `build` and `check` scripts now invoke `bunx --bun vp …` instead of bare `vp …`. The `vp` binary's Node shebang can't load the TypeScript `vite.config.ts`; running it under Bun fixes `bun run check` locally without any CI impact.
+
+### Removed
+
+- `.npmignore` — redundant with the `files` whitelist in `package.json`. `npm pack --dry-run` confirms the tarball still contains only `src/`, `README.md`, `LICENSE`, `CHANGELOG.md`, and `package.json`.
+
+### Fixed
+
+- Bun version pinning drift in `AGENTS.md` (`bun@1.3.11` → `bun@1.3.12`, matching `package.json` and CI).
+
+## [0.1.1] — Effect beta.47 compatibility
+
+### Changed
 
 - Aligned package metadata and compatibility with `effect@4.0.0-beta.47`. (#2)
 
-## 0.1.0 — Initial Release
+## [0.1.0] — Initial Release
 
 Effect-first library for writing oxlint custom lint rules.
 
