@@ -38,34 +38,36 @@ const withSourceCode = <A>(
 // ---------------------------------------------------------------------------
 
 /**
- * Get the source text for a node, optionally with surrounding characters.
+ * Get the full source text of the file being linted.
  *
- * When called with no arguments, returns the entire source text.
- * Pass an `Option<ESTree.Node>` to get text for a specific node.
+ * @example
+ * ```ts
+ * const text = yield* SourceCode.getText()
+ * ```
  *
  * @since 0.2.0
  */
-export const getText: {
-	(): Effect.Effect<string, never, RuleContext>;
-	(
-		node: Option.Option<ESTree.Node>,
-		beforeCount?: number,
-		afterCount?: number
-	): Effect.Effect<string, never, RuleContext>;
-} = (
-	node?: Option.Option<ESTree.Node>,
+export const getText = (): Effect.Effect<string, never, RuleContext> =>
+	withSourceCode((sc) => sc.getText(null));
+
+/**
+ * Get the source text covering a specific node, optionally including
+ * `beforeCount` characters before and `afterCount` characters after.
+ *
+ * @example
+ * ```ts
+ * const text = yield* SourceCode.getNodeText(node)
+ * const withCtx = yield* SourceCode.getNodeText(node, 10, 10)
+ * ```
+ *
+ * @since 0.2.0
+ */
+export const getNodeText = (
+	node: ESTree.Node,
 	beforeCount?: number,
 	afterCount?: number
 ): Effect.Effect<string, never, RuleContext> =>
-	withSourceCode((sc) =>
-		sc.getText(
-			node === undefined
-				? null
-				: Option.getOrElse(node, () => null as never),
-			beforeCount,
-			afterCount
-		)
-	);
+	withSourceCode((sc) => sc.getText(node, beforeCount, afterCount));
 
 // ---------------------------------------------------------------------------
 // Ancestry

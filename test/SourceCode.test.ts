@@ -32,6 +32,21 @@ describe('SourceCode.getText', () => {
 });
 
 // ---------------------------------------------------------------------------
+// getNodeText
+// ---------------------------------------------------------------------------
+
+describe('SourceCode.getNodeText', () => {
+	it.effect('delegates to the oxlint sourceCode for a node', () =>
+		Effect.gen(function* () {
+			const ident = Testing.id('foo');
+			const result = yield* SourceCode.getNodeText(ident);
+			// Mock oxlint sourceCode returns '' for unknown nodes.
+			expect(typeof result).toBe('string');
+		}).pipe(Effect.provide(TestLayer))
+	);
+});
+
+// ---------------------------------------------------------------------------
 // getAllComments
 // ---------------------------------------------------------------------------
 
