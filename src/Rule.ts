@@ -23,23 +23,6 @@ import type { EffectVisitor, TypedEffectVisitor } from './Visitor.ts';
 import { merge as mergeVisitors, toOxlintVisitor } from './Visitor.ts';
 
 // ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Extract the identifier name from a `NewExpression` callee.
- *
- * `AST.calleeName` only accepts `CallExpression`. This mirrors the
- * same logic for `NewExpression.callee`.
- *
- * @internal
- */
-const newExprCalleeName = (callee: ESTree.Expression): Option.Option<string> =>
-	callee.type === 'Identifier' && 'name' in callee && P.isString(callee.name)
-		? Option.some(callee.name)
-		: Option.none();
-
-// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -344,7 +327,7 @@ export const banNewExpr = (
 				NewExpression: (node: ESTree.Node) =>
 					pipe(
 						AST.narrow(node, 'NewExpression'),
-						Option.flatMap((n) => newExprCalleeName(n.callee)),
+						Option.flatMap(AST.calleeIdentifier),
 						Option.filter((n) => Arr.contains(names, n)),
 						Option.match({
 							onNone: () => Effect.void,
@@ -520,9 +503,7 @@ export const banMultiple = (
 								NewExpression: (node: ESTree.Node) =>
 									pipe(
 										AST.narrow(node, 'NewExpression'),
-										Option.flatMap((n) =>
-											newExprCalleeName(n.callee)
-										),
+										Option.flatMap(AST.calleeIdentifier),
 										Option.filter((n) =>
 											Arr.contains(names, n)
 										),

@@ -251,6 +251,27 @@ export const calleeName = (
 ): Option.Option<string> => identifierName(node.callee);
 
 /**
+ * Extract the callee identifier name from a `CallExpression` or `NewExpression`
+ * when the callee is a bare identifier (e.g. `fetch(...)`, `new Date()`).
+ *
+ * Unifies the callee-name extraction across both node shapes, which have
+ * the same `.callee` field structure at runtime.
+ *
+ * @example
+ * ```ts
+ * // CallExpression — `fetch(...)` → Some('fetch')
+ * AST.calleeIdentifier(callNode)
+ * // NewExpression — `new Date()` → Some('Date')
+ * AST.calleeIdentifier(newNode)
+ * ```
+ *
+ * @since 0.2.0
+ */
+export const calleeIdentifier = (
+	node: ESTree.CallExpression | ESTree.NewExpression
+): Option.Option<string> => identifierName(node.callee);
+
+/**
  * Extract the object and property names from a static `MemberExpression`.
  *
  * Returns `Option<readonly [objectName, propertyName]>`.
@@ -464,39 +485,54 @@ const isASTShape = (
 ): value is { readonly type: string; readonly parent?: unknown } =>
 	P.isObject(value) && 'type' in value && P.isString(value.type);
 
+/** @internal Narrow an AST-shape value to a specific `type` literal. */
+const hasAncestorType = <T extends string>(
+	value: { readonly type: string; readonly parent?: unknown },
+	type: T
+): value is { readonly type: T; readonly parent?: unknown } =>
+	value.type === type;
+
 /**
  * Walk the `.parent` chain and return the first ancestor whose `type`
- * matches the given string.
+ * matches the given string literal.
  *
- * Returns the ancestor as an opaque record — callers should narrow
- * via `type` checks or other AST helpers rather than casting.
+ * The generic `T` narrows the returned node's `type` field to the same
+ * literal, mirroring `AST.narrow`. For example,
+ * `findAncestor(node, 'FunctionDeclaration')` returns
+ * `Option<{ readonly type: 'FunctionDeclaration'; readonly parent?: unknown }>`.
+ *
+ * @example
+ * ```ts
+ * const fn = AST.findAncestor(node, 'FunctionDeclaration')
+ * // Option<{ readonly type: 'FunctionDeclaration'; readonly parent?: unknown }>
+ * ```
  *
  * @since 0.1.0
  */
 export const findAncestor: {
-	(
-		type: string
+	<T extends string>(
+		type: T
 	): (node: {
 		readonly parent?: unknown;
-	}) => Option.Option<{ readonly type: string; readonly parent?: unknown }>;
-	(
+	}) => Option.Option<{ readonly type: T; readonly parent?: unknown }>;
+	<T extends string>(
 		node: { readonly parent?: unknown },
-		type: string
-	): Option.Option<{ readonly type: string; readonly parent?: unknown }>;
+		type: T
+	): Option.Option<{ readonly type: T; readonly parent?: unknown }>;
 } = dual(
 	2,
-	(
+	<T extends string>(
 		node: { readonly parent?: unknown },
-		type: string
-	): Option.Option<{ readonly type: string; readonly parent?: unknown }> => {
+		type: T
+	): Option.Option<{ readonly type: T; readonly parent?: unknown }> => {
 		const walk = (
 			current: unknown
 		): Option.Option<{
-			readonly type: string;
+			readonly type: T;
 			readonly parent?: unknown;
 		}> => {
 			if (!isASTShape(current)) return Option.none();
-			if (current.type === type) return Option.some(current);
+			if (hasAncestorType(current, type)) return Option.some(current);
 			return walk(current.parent);
 		};
 		return walk(node.parent);
@@ -509,8 +545,12 @@ export const findAncestor: {
  * @since 0.1.0
  */
 export const hasAncestor: {
-	(type: string): (node: { readonly parent?: unknown }) => boolean;
-	(node: { readonly parent?: unknown }, type: string): boolean;
-} = dual(2, (node: { readonly parent?: unknown }, type: string): boolean =>
-	Option.isSome(findAncestor(node, type))
+	<T extends string>(
+		type: T
+	): (node: { readonly parent?: unknown }) => boolean;
+	<T extends string>(node: { readonly parent?: unknown }, type: T): boolean;
+} = dual(
+	2,
+	<T extends string>(node: { readonly parent?: unknown }, type: T): boolean =>
+		Option.isSome(findAncestor(node, type))
 );
