@@ -1,7 +1,7 @@
 {
   "$schema": "https://www.schemastore.org/package.json",
   "name": "effect-oxlint",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Effect-first library for writing oxlint custom lint rules",
   "keywords": [
     "ast",

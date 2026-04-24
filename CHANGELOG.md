@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file. The format is b
 
 ## [Unreleased]
 
+## [0.2.0] — Effect beta.57 + refined rule-factory API
+
 ### Added
 
 - `exports.types` condition and top-level `types` field in `package.json` so TypeScript tools that don't read conditional exports still pick up type information.
