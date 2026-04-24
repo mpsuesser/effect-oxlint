@@ -51,19 +51,19 @@
   },
   "devDependencies": {
     "@effect/tsgo": "^0.1.1",
-    "@effect/vitest": "4.0.0-beta.47",
+    "@effect/vitest": "4.0.0-beta.57",
     "@types/bun": "^1.3.10",
     "@typescript/native-preview": "^7.0.0-dev.20260401.1",
-    "effect": "4.0.0-beta.47",
+    "effect": "4.0.0-beta.57",
     "typescript": "^5.9.3",
     "vite-plus": "^0.1.15",
     "vitest": "^4.1.0"
   },
   "peerDependencies": {
-    "effect": "^4.0.0-beta.47"
+    "effect": "^4.0.0-beta.57"
   },
   "overrides": {
-    "effect": "4.0.0-beta.47",
+    "effect": "4.0.0-beta.57",
     "vite": "npm:@voidzero-dev/vite-plus-core@0.1.15"
   },
   "packageManager": "bun@1.3.12"
