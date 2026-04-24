@@ -255,6 +255,27 @@ const multiFix = Diagnostic.composeFixes(
 );
 ```
 
+## Handler Error Channel
+
+Visitor handlers — and the `create` generator itself — have a fixed error channel of `never`. That is, a rule **cannot fail** via `Effect.fail`; oxlint's plugin API is synchronous and `effect-oxlint` bridges it with `Effect.runSync`, which has no way to surface typed failures.
+
+If a handler needs to run a fallible sub-effect, catch the failure inside the handler and decide how to surface it — typically as a reported diagnostic:
+
+```ts
+const ctx = yield* RuleContext;
+
+const handler = (node: ESTree.Node) =>
+	fallibleEffect(node).pipe(
+		Effect.catch(() =>
+			ctx.report(
+				makeDiagnostic({ node, message: 'could not analyse node' })
+			)
+		)
+	);
+```
+
+See the JSDoc on `Rule.define` and `EffectHandler` in `src/Visitor.ts` for the full contract.
+
 ## Types
 
 `effect-oxlint` re-exports all `@oxlint/plugins` types so consumers don't need a direct dependency for type imports:

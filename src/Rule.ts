@@ -104,6 +104,15 @@ export interface RuleConfig<Options = undefined> {
  * `Effect.runSync` is used here at the runtime boundary — the bridge
  * between oxlint's synchronous plugin API and our Effect world.
  *
+ * ## Error channel
+ *
+ * Both the `create` generator and individual visitor handlers have a
+ * fixed error channel of `never`. Rules cannot fail via `Effect.fail` —
+ * any failure must be handled inside the handler (typically by
+ * reporting a diagnostic through `RuleContext.report`). See
+ * `EffectHandler` in `./Visitor.ts` for the full contract and the
+ * recommended `Effect.catch` pattern for fallible sub-effects.
+ *
  * @since 0.1.0
  */
 export const define = <Options = undefined>(

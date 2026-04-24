@@ -26,6 +26,32 @@ import { RuleContext } from './RuleContext.ts';
  * Receives an AST node and returns an `Effect<void>` that may read/write
  * `Ref` state and report diagnostics via `RuleContext`.
  *
+ * ## Error channel
+ *
+ * The error channel is **fixed to `never`** — handlers cannot fail via
+ * `Effect.fail` because oxlint's plugin API is synchronous and has no
+ * notion of a typed rule failure. Every handler runs through
+ * `Effect.runSync` at the FFI boundary in `Rule.define`, and any defect
+ * would crash the linter for the whole file.
+ *
+ * If a handler needs to call an effect that *can* fail, catch the error
+ * in the handler and surface it as a diagnostic (or suppress it). For
+ * example:
+ *
+ * ```ts
+ * Visitor.on('CallExpression', (node) =>
+ *   someFallibleEffect(node).pipe(
+ *     Effect.catch((error) =>
+ *       RuleContext.report({ node, message: `rule failure: ${error._tag}` })
+ *     )
+ *   )
+ * )
+ * ```
+ *
+ * Defects (thrown exceptions, `Effect.die`) are not caught here and will
+ * propagate out of the linter. Reserve them for genuine invariant
+ * violations.
+ *
  * @since 0.1.0
  */
 export type EffectHandler<N = ESTree.Node> = (
