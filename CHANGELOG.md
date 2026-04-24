@@ -8,15 +8,25 @@ All notable changes to this project are documented in this file. The format is b
 
 - `exports.types` condition and top-level `types` field in `package.json` so TypeScript tools that don't read conditional exports still pick up type information.
 - `Requirements` section in `README.md` documenting that `effect-oxlint` ships TypeScript source (no compiled `dist/`) and listing supported runtimes / bundler configurations.
+- Subpath export `effect-oxlint/testing` for the `Testing` module so production bundles don't pull in test-only builders.
+- `AST.calleeIdentifier(node)` — unified callee-name extractor accepting both `CallExpression` and `NewExpression`. Replaces the private `newExprCalleeName` helper previously duplicated in `Rule.ts`.
+- `Rule.banCallOfMember(obj, prop, opts)` factory and `memberCalls` entry on `BanMultipleSpec` for banning `obj.prop(...)` method-call patterns (e.g. `Effect.runSync`, `console.log`). 6 new unit tests plus a `memberCalls` case on `banMultiple`.
+- `SourceCode.getNodeText(node, beforeCount?, afterCount?)` — clear companion to the no-arg `getText()` (whole file), replacing the awkward `Option<Node>` overload.
+- "Handler Error Channel" section in `README.md` and expanded JSDoc on `Rule.define` / `EffectHandler` documenting that handlers have a fixed `never` error channel and must catch fallible sub-effects internally.
 
 ### Changed
 
-- Bumped `effect` and `@effect/vitest` from `4.0.0-beta.47` to `4.0.0-beta.57` (dependency, peer, override, and README install snippets). All 250 tests and `tsgo` pass without any Effect-code changes.
+- Bumped `effect` and `@effect/vitest` from `4.0.0-beta.47` to `4.0.0-beta.57` (dependency, peer, override, and README install snippets). All tests and `tsgo` pass without any Effect-code changes.
 - `build` and `check` scripts now invoke `bunx --bun vp …` instead of bare `vp …`. The `vp` binary's Node shebang can't load the TypeScript `vite.config.ts`; running it under Bun fixes `bun run check` locally without any CI impact.
+- Generated rule names for `banMember` / `banCallOf` / `banNewExpr` / `banStatement` / `banCallOfMember` are now kebab-cased (`ban-throw-statement`, `ban-new-date`, `ban-json-parse-stringify`). The transform is idempotent on already-kebab strings.
+- `AST.findAncestor` / `AST.hasAncestor` now carry a literal-type generic so `findAncestor(node, 'FunctionDeclaration')` returns `Option<{ readonly type: 'FunctionDeclaration'; readonly parent?: unknown }>` (mirrors `AST.narrow`).
+- `src/Rule.ts` now reuses `AST.calleeIdentifier` instead of a private `newExprCalleeName` duplicate.
 
 ### Removed
 
 - `.npmignore` — redundant with the `files` whitelist in `package.json`. `npm pack --dry-run` confirms the tarball still contains only `src/`, `README.md`, `LICENSE`, `CHANGELOG.md`, and `package.json`.
+- Flat named re-exports (`ast`, `cwd`, `filename`, `id`, `report`, `sourceCode`, `text`) from the main `effect-oxlint` entrypoint. Use `yield* RuleContext` and the `.filename` / `.report` / etc. fields on the resolved service instead. The named accessors remain on `src/RuleContext.ts` for internal use.
+- The `SourceCode.getText(Option<Node>, …)` overload. Call `getText()` for whole-file text or `getNodeText(node, …)` for node-specific text.
 
 ### Fixed
 
