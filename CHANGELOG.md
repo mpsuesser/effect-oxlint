@@ -11,6 +11,7 @@ All notable changes to this project are documented in this file. The format is b
 
 ### Changed
 
+- Bumped `effect` and `@effect/vitest` from `4.0.0-beta.47` to `4.0.0-beta.57` (dependency, peer, override, and README install snippets). All 250 tests and `tsgo` pass without any Effect-code changes.
 - `build` and `check` scripts now invoke `bunx --bun vp …` instead of bare `vp …`. The `vp` binary's Node shebang can't load the TypeScript `vite.config.ts`; running it under Bun fixes `bun run check` locally without any CI impact.
 
 ### Removed
@@ -20,6 +21,7 @@ All notable changes to this project are documented in this file. The format is b
 ### Fixed
 
 - Bun version pinning drift in `AGENTS.md` (`bun@1.3.11` → `bun@1.3.12`, matching `package.json` and CI).
+- Added `.references/` to `.gitignore` so local Effect source clones used for skill lookups aren't scanned by `vp check` / linted as project code.
 
 ## [0.1.1] — Effect beta.47 compatibility
 
