@@ -23,6 +23,38 @@ import type { EffectVisitor, TypedEffectVisitor } from './Visitor.ts';
 import { merge as mergeVisitors, toOxlintVisitor } from './Visitor.ts';
 
 // ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Convert a PascalCase / camelCase / acronym string to kebab-case for use
+ * in generated rule names. Idempotent on already-kebab strings.
+ *
+ * @example
+ * ```
+ * kebab('ThrowStatement')  // 'throw-statement'
+ * kebab('ForInStatement')  // 'for-in-statement'
+ * kebab('JSON')            // 'json'
+ * kebab('ban-fetch')       // 'ban-fetch'
+ * ```
+ *
+ * @internal
+ */
+const kebab = (s: string): string =>
+	s
+		.replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+		.replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+		.toLowerCase();
+
+/**
+ * Render a list of identifier segments as a kebab-case rule-name tail.
+ *
+ * @internal
+ */
+const kebabList = (parts: ReadonlyArray<string>): string =>
+	Arr.join(Arr.map(parts, kebab), '-');
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -160,7 +192,7 @@ export const banMember = (
 	}
 ): CreateRule =>
 	define({
-		name: `ban-${obj}-${P.isString(prop) ? prop : Arr.join(prop, '-')}`,
+		name: `ban-${kebabList([obj, ...(P.isString(prop) ? [prop] : prop)])}`,
 		meta: meta({
 			type: opts.meta?.type ?? 'suggestion',
 			description: opts.message
@@ -259,7 +291,7 @@ export const banCallOf = (
 ): CreateRule => {
 	const names = P.isString(name) ? [name] : name;
 	return define({
-		name: `ban-call-${Arr.join(names, '-')}`,
+		name: `ban-call-${kebabList(names)}`,
 		meta: meta({
 			type: opts.meta?.type ?? 'suggestion',
 			description: opts.message
@@ -316,7 +348,7 @@ export const banNewExpr = (
 ): CreateRule => {
 	const names = P.isString(name) ? [name] : name;
 	return define({
-		name: `ban-new-${Arr.join(names, '-')}`,
+		name: `ban-new-${kebabList(names)}`,
 		meta: meta({
 			type: opts.meta?.type ?? 'suggestion',
 			description: opts.message
@@ -360,7 +392,7 @@ export const banStatement = (
 	}
 ): CreateRule =>
 	define({
-		name: `ban-${nodeType}`,
+		name: `ban-${kebab(nodeType)}`,
 		meta: meta({
 			type: opts.meta?.type ?? 'suggestion',
 			description: opts.message
