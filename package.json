@@ -40,8 +40,8 @@
     }
   },
   "scripts": {
-    "build": "vp build",
-    "check": "vp check --fix",
+    "build": "bunx --bun vp build",
+    "check": "bunx --bun vp check --fix",
     "test": "vitest run",
     "typecheck": "tsgo",
     "prepare": "effect-tsgo patch"
