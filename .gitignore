@@ -6,6 +6,7 @@ build/
 .turbo/
 .opencode/
 opencode.json
+.references/
 .vscode/
 .env
 .env.*
