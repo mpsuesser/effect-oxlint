@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "references": {
+    "effect": {
+      "repository": "Effect-TS/effect",
+      "branch": "main"
+    },
+    "oxlint-plugin-effect": "../oxlint-plugin-effect/"
+  }
+}
