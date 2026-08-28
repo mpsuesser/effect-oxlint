@@ -19,7 +19,7 @@ bun install
 ```sh
 bun run check       # lint + format + typecheck (auto-fix)
 bun run test        # run all tests
-bun run typecheck   # tsgo type-check only
+bun run typecheck   # patched TypeScript type-check only
 ```
 
 Run a single test file or by name:
@@ -62,7 +62,7 @@ The `.vscode/` directory is gitignored. If you use VS Code, create `.vscode/sett
 }
 ```
 
-This enables the workspace TypeScript SDK and tsgo for native type-checking.
+This enables the workspace TypeScript SDK and native type-checking.
 
 ## Reporting Issues
 

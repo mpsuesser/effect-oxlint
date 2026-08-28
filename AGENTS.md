@@ -7,7 +7,7 @@ Effect-first library for writing oxlint custom lint rules. Wraps `@oxlint/plugin
 ```sh
 bun run check          # lint + format + typecheck (with auto-fix)
 bun run test           # vitest run (all tests)
-bun run typecheck      # tsgo type-check only
+bun run typecheck      # patched TypeScript type-check only
 ```
 
 ### Running a single test
@@ -35,7 +35,7 @@ test/          11 test files — one per source module
 vite.config.ts Lint rules, formatting, test config (vite-plus)
 ```
 
-Single-package project. Bun is the package manager (`bun@1.3.14`). No monorepo tooling.
+Single-package project. Bun is the package manager (`bun@1.4.0`). No monorepo tooling.
 
 ## Code Style
 

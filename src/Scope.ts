@@ -33,10 +33,8 @@ import * as Option from 'effect/Option';
 export const findVariable: {
 	(name: string): (scope: OxlintScope) => Option.Option<Variable>;
 	(scope: OxlintScope, name: string): Option.Option<Variable>;
-} = dual(
-	2,
-	(scope: OxlintScope, name: string): Option.Option<Variable> =>
-		Option.fromNullishOr(scope.set.get(name))
+} = dual(2, (scope: OxlintScope, name: string): Option.Option<Variable> =>
+	Option.fromNullishOr(scope.set.get(name))
 );
 
 /**

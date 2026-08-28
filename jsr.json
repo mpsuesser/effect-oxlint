@@ -1,6 +1,6 @@
 {
   "name": "@effect-oxlint/effect-oxlint",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "license": "MIT",
   "exports": {
     ".": "./src/index.ts",

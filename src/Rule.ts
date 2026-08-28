@@ -132,7 +132,7 @@ export const define = <Options = undefined>(
 		const decodeOptions = (): Options => {
 			const schema = config.options;
 			if (schema === undefined) return undefined as Options;
-			return Schema.decodeUnknownSync(schema)(oxlintContext.options[0]);
+			return Schema.decodeSync(schema)(oxlintContext.options[0]);
 		};
 		const options = run(Effect.sync(decodeOptions));
 
@@ -573,12 +573,9 @@ export const banMultiple = (
 			// Statement bans
 			const stmtVisitors: ReadonlyArray<EffectVisitor> =
 				spec.statements !== undefined
-					? Arr.map(
-							spec.statements,
-							(nodeType): EffectVisitor => ({
-								[nodeType]: report
-							})
-						)
+					? Arr.map(spec.statements, (nodeType): EffectVisitor => ({
+							[nodeType]: report
+						}))
 					: [];
 
 			// Call bans
@@ -630,22 +627,17 @@ export const banMultiple = (
 			// Member bans
 			const memberVisitors: ReadonlyArray<EffectVisitor> =
 				spec.members !== undefined
-					? Arr.map(
-							spec.members,
-							([obj, prop]): EffectVisitor => ({
-								MemberExpression: (node: ESTree.Node) =>
-									pipe(
-										AST.narrow(node, 'MemberExpression'),
-										Option.flatMap(
-											AST.matchMember(obj, prop)
-										),
-										Option.match({
-											onNone: () => Effect.void,
-											onSome: (matched) => report(matched)
-										})
-									)
-							})
-						)
+					? Arr.map(spec.members, ([obj, prop]): EffectVisitor => ({
+							MemberExpression: (node: ESTree.Node) =>
+								pipe(
+									AST.narrow(node, 'MemberExpression'),
+									Option.flatMap(AST.matchMember(obj, prop)),
+									Option.match({
+										onNone: () => Effect.void,
+										onSome: (matched) => report(matched)
+									})
+								)
+						}))
 					: [];
 
 			// Member-call bans
@@ -672,20 +664,17 @@ export const banMultiple = (
 			// Import bans
 			const importVisitors: ReadonlyArray<EffectVisitor> =
 				spec.imports !== undefined
-					? Arr.map(
-							spec.imports,
-							(source): EffectVisitor => ({
-								ImportDeclaration: (node: ESTree.Node) =>
-									pipe(
-										AST.narrow(node, 'ImportDeclaration'),
-										Option.flatMap(AST.matchImport(source)),
-										Option.match({
-											onNone: () => Effect.void,
-											onSome: (matched) => report(matched)
-										})
-									)
-							})
-						)
+					? Arr.map(spec.imports, (source): EffectVisitor => ({
+							ImportDeclaration: (node: ESTree.Node) =>
+								pipe(
+									AST.narrow(node, 'ImportDeclaration'),
+									Option.flatMap(AST.matchImport(source)),
+									Option.match({
+										onNone: () => Effect.void,
+										onSome: (matched) => report(matched)
+									})
+								)
+						}))
 					: [];
 
 			return mergeVisitors(

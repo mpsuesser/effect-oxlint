@@ -76,13 +76,10 @@ export const fromId = (opts: {
 export const withFix: {
 	(fix: FixFn): (diagnostic: OxlintDiagnostic) => OxlintDiagnostic;
 	(diagnostic: OxlintDiagnostic, fix: FixFn): OxlintDiagnostic;
-} = dual(
-	2,
-	(diagnostic: OxlintDiagnostic, fix: FixFn): OxlintDiagnostic => ({
-		...diagnostic,
-		fix
-	})
-);
+} = dual(2, (diagnostic: OxlintDiagnostic, fix: FixFn): OxlintDiagnostic => ({
+	...diagnostic,
+	fix
+}));
 
 /**
  * Attach suggestion fixes to a diagnostic.

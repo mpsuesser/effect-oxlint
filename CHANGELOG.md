@@ -4,6 +4,15 @@ All notable changes to this project are documented in this file. The format is b
 
 ## [Unreleased]
 
+## [0.3.4] — Effect 4.0.0-rc.112
+
+### Changed
+
+- Updated `effect` and `@effect/vitest` to `4.0.0-rc.112`; the published peer range is now `^4.0.0-rc.112`.
+- Updated the complete development toolchain, including Bun `1.4.0`, TypeScript `7.0.2`, `@effect/tsgo` `0.38.0`, Vite+ `0.3.0`, Vitest `4.1.11`, and `@oxlint/plugins` `1.80.0`.
+- Replaced the superseded `@typescript/native-preview` package with Effect-patched TypeScript 7 and aligned local, CI, and publishing commands.
+- Adopted `Schema.decodeSync` for typed rule options and the formatting and lint behavior of the upgraded Vite+ toolchain.
+
 ## [0.3.3] — Effect 4.0.0-beta.100
 
 ### Changed

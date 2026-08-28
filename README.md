@@ -21,11 +21,11 @@ Write [oxlint](https://oxc.rs/docs/guide/usage/linter) custom lint rules with [E
 ## Install
 
 ```sh
-npm install effect-oxlint effect@4.0.0-beta.100
+npm install effect-oxlint effect@4.0.0-rc.112
 ```
 
 ```sh
-bun add effect-oxlint effect@4.0.0-beta.100
+bun add effect-oxlint effect@4.0.0-rc.112
 ```
 
 ```sh
@@ -398,7 +398,7 @@ Available builders include `id`, `memberExpr`, `computedMemberExpr`, `chainedMem
 bun install                # install dependencies
 bun run check              # lint + format + typecheck (auto-fix)
 bun run test               # run all tests
-bun run typecheck          # tsgo type-check only
+bun run typecheck          # patched TypeScript type-check only
 # Single test file
 bunx vitest run test/Rule.test.ts
 

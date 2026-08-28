@@ -47,7 +47,10 @@ export default defineConfig({
 		overrides: [
 			{
 				files: ['**/*.{test,spec}.*'],
-				rules: {}
+				rules: {
+					'vitest/expect-expect': 'off',
+					'vitest/no-standalone-expect': 'off'
+				}
 			}
 		],
 		options: {
