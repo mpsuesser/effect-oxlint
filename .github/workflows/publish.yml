@@ -77,6 +77,22 @@ jobs:
               if: steps.registry.outputs.publish == 'true'
               run: npm publish --provenance --access public
 
+            - name: Verify npm availability
+              run: |
+                  PACKAGE_NAME=$(node --print "encodeURIComponent(require('./package.json').name)")
+                  PACKAGE_VERSION=$(node --print "require('./package.json').version")
+                  for ATTEMPT in $(seq 1 60); do
+                    STATUS=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+                      "https://registry.npmjs.org/$PACKAGE_NAME/$PACKAGE_VERSION")
+                    case "$STATUS" in
+                      200) exit 0 ;;
+                      404) sleep 5 ;;
+                      *) echo "Registry verification failed with HTTP $STATUS" >&2; exit 1 ;;
+                    esac
+                  done
+                  echo "Published version did not become available within five minutes" >&2
+                  exit 1
+
     publish-jsr:
         name: Publish to JSR
         needs: publish-npm
