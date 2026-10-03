@@ -4,7 +4,8 @@ Thanks for your interest in contributing. This guide covers everything you need 
 
 ## Prerequisites
 
-- [Bun](https://bun.sh) >= 1.3.0
+- [Bun](https://bun.sh) 1.4.0
+- Node.js 24.11 or newer in the 24.x line (used by Vite+ and Vitest 5)
 
 ## Setup
 
@@ -30,6 +31,12 @@ bunx vitest run -t "reports for matching"
 ```
 
 ## Submitting a Pull Request
+
+Release maintainers bump `package.json` and `jsr.json` together and update the
+changelog. Main pushes verify and publish new npm versions with provenance;
+already-published versions are skipped. A matching GitHub release tag (for
+example `v0.4.0`) also publishes to JSR after npm verification. Publishing runs
+are serialized to avoid duplicate uploads.
 
 1. Fork the repo and create a branch from `main`.
 2. Add or update tests for any changed behavior.

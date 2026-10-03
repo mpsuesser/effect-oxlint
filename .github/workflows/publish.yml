@@ -1,6 +1,8 @@
 name: Publish
 
 on:
+    push:
+        branches: [main]
     workflow_dispatch:
         inputs:
             runner:
@@ -9,6 +11,10 @@ on:
                 default: ubuntu-latest
     release:
         types: [published]
+
+concurrency:
+    group: publish
+    cancel-in-progress: false
 
 jobs:
     publish-npm:
@@ -20,11 +26,29 @@ jobs:
         steps:
             - uses: actions/checkout@v6
 
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: '24'
+                  registry-url: 'https://registry.npmjs.org'
+                  package-manager-cache: false
+
             - uses: oven-sh/setup-bun@v2
               with:
                   bun-version: '1.4.0'
 
             - run: bun install --frozen-lockfile
+
+            - name: Verify package versions and release tag
+              run: |
+                  PACKAGE_VERSION=$(node --print "require('./package.json').version")
+                  JSR_VERSION=$(node --print "require('./jsr.json').version")
+                  test "$PACKAGE_VERSION" = "$JSR_VERSION"
+                  if [ "$GITHUB_EVENT_NAME" = release ]; then
+                    test "$GITHUB_REF_NAME" = "v$PACKAGE_VERSION"
+                  fi
+
+            - name: Lint and format
+              run: bunx vp check
 
             - name: Test
               run: bun run test
@@ -32,26 +56,41 @@ jobs:
             - name: Typecheck
               run: bun run typecheck
 
-            - uses: actions/setup-node@v6
-              with:
-                  node-version: '24'
-                  registry-url: 'https://registry.npmjs.org'
-
             # npm OIDC trusted publishing requires npm >= 11.5.1
             - name: Upgrade npm
               run: npm install -g npm@latest
 
+            - name: Check npm version
+              id: registry
+              run: |
+                  PACKAGE_NAME=$(node --print "encodeURIComponent(require('./package.json').name)")
+                  PACKAGE_VERSION=$(node --print "require('./package.json').version")
+                  STATUS=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+                    "https://registry.npmjs.org/$PACKAGE_NAME/$PACKAGE_VERSION")
+                  case "$STATUS" in
+                    200) echo "publish=false" >> "$GITHUB_OUTPUT" ;;
+                    404) echo "publish=true" >> "$GITHUB_OUTPUT" ;;
+                    *) echo "Registry lookup failed with HTTP $STATUS" >&2; exit 1 ;;
+                  esac
+
             - name: Publish
+              if: steps.registry.outputs.publish == 'true'
               run: npm publish --provenance --access public
 
     publish-jsr:
         name: Publish to JSR
+        needs: publish-npm
+        if: github.event_name != 'push'
         runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
         permissions:
             contents: read
             id-token: write
         steps:
             - uses: actions/checkout@v6
+
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: '24'
 
             - uses: oven-sh/setup-bun@v2
               with:

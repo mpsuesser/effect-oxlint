@@ -13,16 +13,18 @@ jobs:
         steps:
             - uses: actions/checkout@v6
 
-            - uses: voidzero-dev/setup-vp@v1.18.0
+            - uses: actions/setup-node@v6
               with:
-                  cache: true
+                  node-version: '24'
 
             - uses: oven-sh/setup-bun@v2
               with:
                   bun-version: '1.4.0'
 
+            - run: bun install --frozen-lockfile
+
             - name: Lint & format
-              run: vp check
+              run: bunx vp check
 
             - name: Test
               run: bun run test

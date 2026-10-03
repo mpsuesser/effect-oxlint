@@ -6,6 +6,10 @@
 
 Write [oxlint](https://oxc.rs/docs/guide/usage/linter) custom lint rules with [Effect v4](https://effect.website).
 
+Targets **Effect 4.0.0 stable** with a `^4.0.0` peer dependency. Keep directly
+used Effect-family packages on the same release. Development uses
+`@effect/vitest@4.0.0`, Vitest 5, and Vite+ 1.0.
+
 `effect-oxlint` wraps `@oxlint/plugins` in Effect idioms so rule authors get typed errors, composable visitors, `Option`-safe AST matching, and `Ref`-based state without any mutable variables.
 
 ## Features
@@ -21,11 +25,11 @@ Write [oxlint](https://oxc.rs/docs/guide/usage/linter) custom lint rules with [E
 ## Install
 
 ```sh
-npm install effect-oxlint effect@4.0.0-rc.112
+npm install effect-oxlint effect@4.0.0
 ```
 
 ```sh
-bun add effect-oxlint effect@4.0.0-rc.112
+bun add effect-oxlint effect@4.0.0
 ```
 
 ```sh

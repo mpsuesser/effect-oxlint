@@ -4,6 +4,19 @@ All notable changes to this project are documented in this file. The format is b
 
 ## [Unreleased]
 
+## [0.4.0] — Stable Effect 4.0.0
+
+### Changed
+
+- Target `effect@4.0.0` and require the stable `^4.0.0` peer range.
+- Align `@effect/vitest` to 4.0.0 and upgrade the compatible test stack to Vitest 5 / Vite+ 1.0; require `@oxlint/plugins` 1.85 or newer.
+- Update installation and contributor guidance for the stable baseline.
+- Automatically publish unpublished npm versions on main pushes after lint, format, tests, and typechecking. Serialize publishing and retain release-triggered JSR publication.
+
+### Compatibility audit
+
+- Reviewed the synchronous rule/visitor boundary, schema-decoded options, service provision, Ref state, and Option-based AST helpers against Effect 4.0.0 (upstream tag commit `67ba4e46a11ccda0b6761578bfd22c04ae00167d`). Existing SDK runtime APIs remain compatible; no dependency patches are needed.
+
 ## [0.3.4] — Effect 4.0.0-rc.112
 
 ### Changed

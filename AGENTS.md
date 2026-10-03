@@ -125,12 +125,12 @@ Every source file follows this layout:
 
 - Return `Option.none()` or `Effect.void` for no-op / absent paths
 - No `throw` or `try/catch` in domain code (use `Effect.try`, `Effect.tryPromise`)
-- Tagged errors via `Schema.TaggedErrorClass` for cross-module failures
+- Tagged errors via `Schema.TaggedError` for cross-module failures
 - Test files may use `throw` and `try/catch` (lint overrides configured)
 
 ### Testing
 
-- Framework: Vitest 4 + `@effect/vitest`
+- Framework: Vitest 5 + `@effect/vitest@4.0.0`, aligned with `effect@4.0.0`
 - Import test utilities: `import { describe, expect, test } from '@effect/vitest'`
 - Effectful tests: `it.effect('name', () => Effect.gen(function* () { ... }).pipe(Effect.provide(TestLayer)))`
 - Pure tests: `test('name', () => { expect(...).toBe(...) })`
