@@ -51,6 +51,47 @@ describe('Rule.meta', () => {
 		});
 		expect(m.hasSuggestions).toBe(true);
 	});
+
+	test('omits optional fields that are not provided', () => {
+		const m = Rule.meta({ type: 'problem', description: 'test' });
+		expect(m).toStrictEqual({
+			type: 'problem',
+			docs: { description: 'test' }
+		});
+	});
+
+	test('passes through schema, defaultOptions, and deprecation', () => {
+		const schema = [
+			{
+				type: 'object',
+				properties: { max: { type: 'number' } }
+			}
+		];
+		const m = Rule.meta({
+			type: 'suggestion',
+			description: 'test',
+			schema,
+			defaultOptions: [{ max: 3 }],
+			deprecated: { message: 'Use new-rule' },
+			replacedBy: ['new-rule']
+		});
+		expect(m.schema).toEqual(schema);
+		expect(m.defaultOptions).toEqual([{ max: 3 }]);
+		expect(m.deprecated).toEqual({ message: 'Use new-rule' });
+		expect(m.replacedBy).toEqual(['new-rule']);
+	});
+
+	test('lets explicit docs override the description', () => {
+		const m = Rule.meta({
+			type: 'problem',
+			description: 'short',
+			docs: { description: 'long', url: 'https://example.com' }
+		});
+		expect(m.docs).toEqual({
+			description: 'long',
+			url: 'https://example.com'
+		});
+	});
 });
 
 // ---------------------------------------------------------------------------
@@ -635,7 +676,10 @@ describe('Rule.banMultiple', () => {
 
 describe('Rule.define with options', () => {
 	test('decodes options via Schema at create time', () => {
-		class RuleOptions extends Schema.Class<RuleOptions>('RuleOptions')({
+		class RuleOptions extends Schema.Class<
+			RuleOptions,
+			{ readonly brand: unique symbol }
+		>('RuleOptions')({
 			strict: Schema.Boolean
 		}) {}
 		const rule = Rule.define({
@@ -667,6 +711,66 @@ describe('Rule.define with options', () => {
 		);
 		expect(Arr.length(result)).toBe(1);
 		expect(result[0]?.diagnostic.message).toBe('strict=true');
+	});
+
+	test('disables oxlint schema validation when options use an Effect Schema', () => {
+		const rule = Rule.define({
+			name: 'with-options',
+			meta: Rule.meta({ type: 'suggestion', description: 'test' }),
+			options: Schema.Struct({ max: Schema.Finite }),
+			create: function* () {
+				const ctx = yield* RuleContext;
+				return Visitor.on('ThrowStatement', (node) =>
+					ctx.report(makeDiagnostic({ node, message: 'reported' }))
+				);
+			}
+		});
+		expect(rule.meta?.schema).toBe(false);
+	});
+
+	test('keeps an explicit meta.schema alongside an options schema', () => {
+		const schema = [{ type: 'object' }];
+		const rule = Rule.define({
+			name: 'with-json-schema',
+			meta: Rule.meta({
+				type: 'suggestion',
+				description: 'test',
+				schema
+			}),
+			options: Schema.Struct({ max: Schema.Finite }),
+			create: function* () {
+				const ctx = yield* RuleContext;
+				return Visitor.on('ThrowStatement', (node) =>
+					ctx.report(makeDiagnostic({ node, message: 'reported' }))
+				);
+			}
+		});
+		expect(rule.meta?.schema).toBe(schema);
+	});
+
+	test('leaves meta.schema unset for rules without options', () => {
+		const rule = Rule.banCallOf('fetch', { message: 'no fetch' });
+		expect(rule.meta?.schema).toBeUndefined();
+	});
+
+	test('fails with a RuleOptionsError that names the rule', () => {
+		const rule = Rule.define({
+			name: 'max-things',
+			meta: Rule.meta({ type: 'suggestion', description: 'test' }),
+			options: Schema.Struct({ max: Schema.Finite }),
+			create: function* () {
+				const ctx = yield* RuleContext;
+				return Visitor.on('ThrowStatement', (node) =>
+					ctx.report(makeDiagnostic({ node, message: 'reported' }))
+				);
+			}
+		});
+		const run = () =>
+			Testing.runRule(rule, 'ThrowStatement', Testing.throwStmt(), {
+				options: [{ max: 'three' }]
+			});
+		expect(run).toThrow(Rule.RuleOptionsError);
+		expect(run).toThrow(/Invalid options for rule "max-things"/);
 	});
 
 	test('options default to undefined when no schema provided', () => {

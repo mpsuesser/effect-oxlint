@@ -7,14 +7,23 @@
  *
  * @since 0.1.0
  */
-import type { CreateRule, ESTree, RuleDocs, RuleMeta } from '@oxlint/plugins';
+import type {
+	CreateRule,
+	ESTree,
+	Options as OxlintOptions,
+	RuleDeprecatedInfo,
+	RuleDocs,
+	RuleMeta,
+	RuleOptionsSchema
+} from '@oxlint/plugins';
+import type * as Cause from 'effect/Cause';
 import * as Arr from 'effect/Array';
 import * as Effect from 'effect/Effect';
+import { pipe } from 'effect/Function';
 import * as Option from 'effect/Option';
 import * as P from 'effect/Predicate';
 import * as Schema from 'effect/Schema';
-
-import { pipe } from 'effect/Function';
+import * as Str from 'effect/String';
 
 import * as AST from './AST.ts';
 import { make as makeDiagnostic } from './Diagnostic.ts';
@@ -41,10 +50,12 @@ import { merge as mergeVisitors, toOxlintVisitor } from './Visitor.ts';
  * @internal
  */
 const kebab = (s: string): string =>
-	s
-		.replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-		.replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
-		.toLowerCase();
+	pipe(
+		s,
+		Str.replace(/([a-z0-9])([A-Z])/g, '$1-$2'),
+		Str.replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2'),
+		Str.toLowerCase
+	);
 
 /**
  * Render a list of identifier segments as a kebab-case rule-name tail.
@@ -64,7 +75,13 @@ const kebabList = (parts: ReadonlyArray<string>): string =>
  * @since 0.1.0
  */
 export interface RuleConfig<Options = undefined> {
-	/** Rule name (used for tracing spans). */
+	/**
+	 * Rule name, used to identify the rule in error messages (for example
+	 * when its options fail to decode).
+	 *
+	 * The ID oxlint reports comes from the key the rule is registered under
+	 * in `Plugin.define`, not from this field.
+	 */
 	readonly name: string;
 	/** Oxlint rule metadata. */
 	readonly meta: RuleMeta;
@@ -72,7 +89,13 @@ export interface RuleConfig<Options = undefined> {
 	 * Optional Schema for rule options.
 	 *
 	 * When provided, the first element of the raw JSON options array
-	 * is decoded at `create` time against this schema.
+	 * is decoded at `create` time against this schema. Decoding failures
+	 * surface as a `RuleOptionsError` defect naming the rule.
+	 *
+	 * oxlint only passes options to rules that declare `meta.schema`. If
+	 * `meta.schema` is not set, `Rule.define` sets it to `false` (disabling
+	 * oxlint's JSON Schema validation in favor of this schema). Set
+	 * `meta.schema` yourself to also validate with JSON Schema.
 	 */
 	readonly options?: Schema.Decoder<Options> | undefined;
 	/**
@@ -90,8 +113,81 @@ export interface RuleConfig<Options = undefined> {
 }
 
 // ---------------------------------------------------------------------------
+// Errors
+// ---------------------------------------------------------------------------
+
+/** @internal Nominal brand for `RuleOptionsError`. */
+declare const RuleOptionsErrorBrand: unique symbol;
+
+/** @internal Explicitly typed base class, so JSR can type the export. */
+const RuleOptionsErrorBase: Schema.Class<
+	RuleOptionsError,
+	Schema.TaggedStruct<
+		'RuleOptionsError',
+		{ readonly rule: Schema.String; readonly issue: Schema.String }
+	>,
+	Cause.YieldableError & {
+		readonly [RuleOptionsErrorBrand]: typeof RuleOptionsErrorBrand;
+	}
+> = Schema.TaggedError<
+	RuleOptionsError,
+	{ readonly [RuleOptionsErrorBrand]: typeof RuleOptionsErrorBrand }
+>()('RuleOptionsError', {
+	rule: Schema.String,
+	issue: Schema.String
+});
+
+/**
+ * Raised when a rule's configured options do not match its `options` schema.
+ *
+ * oxlint's plugin API is synchronous and cannot carry typed failures, so
+ * `Rule.define` raises this as a defect when the rule is created for a file.
+ * The message names the rule (`rule`) and the schema issue (`issue`).
+ *
+ * @since 0.5.0
+ */
+export class RuleOptionsError extends RuleOptionsErrorBase {
+	override get message(): string {
+		return `Invalid options for rule "${this.rule}": ${this.issue}`;
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Builder
 // ---------------------------------------------------------------------------
+
+/**
+ * oxlint rejects options for any rule whose `meta.schema` is unset. When a
+ * rule decodes its options with an Effect Schema, mark oxlint's JSON Schema
+ * validation as disabled (`schema: false`) so the options reach `create`,
+ * where the Effect Schema validates them. An explicit `meta.schema` wins.
+ *
+ * @internal
+ */
+const withOptionsSchema = <Options>(config: RuleConfig<Options>): RuleMeta =>
+	config.options === undefined || config.meta.schema !== undefined
+		? config.meta
+		: { ...config.meta, schema: false };
+
+/** @internal Decode the first raw option against the rule's schema. */
+const decodeOptions = <Options>(
+	config: RuleConfig<Options>,
+	raw: Readonly<OxlintOptions>
+): Effect.Effect<Options> =>
+	config.options === undefined
+		? // SAFETY: without an `options` schema, `Options` keeps its default
+			// of `undefined`, which is the value supplied here.
+			Effect.succeed(undefined as Options)
+		: Schema.decodeEffect(config.options)(raw[0]).pipe(
+				Effect.mapError(
+					(error) =>
+						new RuleOptionsError({
+							rule: config.name,
+							issue: error.message
+						})
+				),
+				Effect.orDie
+			);
 
 /**
  * Define an Effect-first oxlint lint rule.
@@ -109,16 +205,43 @@ export interface RuleConfig<Options = undefined> {
  * Both the `create` generator and individual visitor handlers have a
  * fixed error channel of `never`. Rules cannot fail via `Effect.fail` —
  * any failure must be handled inside the handler (typically by
- * reporting a diagnostic through `RuleContext.report`). See
+ * reporting a diagnostic through the `RuleContext` service). See
  * `EffectHandler` in `./Visitor.ts` for the full contract and the
  * recommended `Effect.catch` pattern for fallible sub-effects.
+ *
+ * Invalid rule options are the one exception: they raise a
+ * `RuleOptionsError` defect when the rule is created.
+ *
+ * @example
+ * ```ts
+ * import * as Effect from 'effect/Effect'
+ * import * as Schema from 'effect/Schema'
+ * import { Diagnostic, Rule, RuleContext } from 'effect-oxlint'
+ *
+ * const maxParams = Rule.define({
+ *   name: 'max-params',
+ *   meta: Rule.meta({ type: 'suggestion', description: 'Limit parameters' }),
+ *   options: Schema.Struct({ max: Schema.Number }),
+ *   create: function* ({ max }) {
+ *     const ctx = yield* RuleContext
+ *     return {
+ *       FunctionDeclaration: (node) =>
+ *         node.params.length > max
+ *           ? ctx.report(
+ *               Diagnostic.make({ node, message: `More than ${max} params` })
+ *             )
+ *           : Effect.void
+ *     }
+ *   }
+ * })
+ * ```
  *
  * @since 0.1.0
  */
 export const define = <Options = undefined>(
 	config: RuleConfig<Options>
 ): CreateRule => ({
-	meta: config.meta,
+	meta: withOptionsSchema(config),
 	create(oxlintContext) {
 		const ruleCtx = fromOxlintContext(oxlintContext);
 
@@ -127,23 +250,19 @@ export const define = <Options = undefined>(
 		const run = <A>(effect: Effect.Effect<A, never, RuleContext>): A =>
 			Effect.runSync(Effect.provideService(effect, RuleContext, ruleCtx));
 
-		// Decode options from the raw JSON array.
-		// When no schema is configured, `Options` defaults to `undefined`.
-		const decodeOptions = (): Options => {
-			const schema = config.options;
-			if (schema === undefined) return undefined as Options;
-			return Schema.decodeSync(schema)(oxlintContext.options[0]);
-		};
-		const options = run(Effect.sync(decodeOptions));
-
-		// Run the create generator to set up Refs and get the visitor map.
-		// TypedEffectVisitor → EffectVisitor: the typed keys provide
-		// narrowed nodes to callers, but at runtime all handlers receive
-		// the same ESTree.Node values. The variance mismatch is safe
-		// because oxlint guarantees the node type matches the key.
 		const effectVisitor = run(
-			Effect.gen(() => config.create(options))
-		) as EffectVisitor;
+			decodeOptions(config, oxlintContext.options).pipe(
+				Effect.flatMap((options) =>
+					// SAFETY: `TypedEffectVisitor` narrows each handler's node
+					// parameter by its key. oxlint only calls a handler with
+					// nodes matching that key, so widening the parameters to
+					// `ESTree.Node` cannot pass a handler the wrong node type.
+					Effect.gen(() => config.create(options)).pipe(
+						Effect.map((visitor) => visitor as EffectVisitor)
+					)
+				)
+			)
+		);
 
 		// Wrap each handler: Effect<void> → plain () => void
 		return toOxlintVisitor(effectVisitor, run);
@@ -157,6 +276,20 @@ export const define = <Options = undefined>(
 /**
  * Build `RuleMeta` with sensible defaults.
  *
+ * `description` is copied into `docs.description`; any `docs` passed
+ * explicitly are merged on top. Optional fields are omitted from the
+ * result when not provided.
+ *
+ * @example
+ * ```ts
+ * Rule.meta({
+ *   type: 'problem',
+ *   description: 'Disallow throw inside Effect.gen',
+ *   fixable: 'code',
+ *   messages: { noThrow: 'Use Effect.fail instead of throw' }
+ * })
+ * ```
+ *
  * @since 0.1.0
  */
 export const meta = (opts: {
@@ -166,18 +299,28 @@ export const meta = (opts: {
 	readonly hasSuggestions?: boolean | undefined;
 	readonly messages?: Record<string, string> | undefined;
 	readonly docs?: RuleDocs | undefined;
-}): RuleMeta => ({
-	type: opts.type,
-	...(opts.fixable !== undefined ? { fixable: opts.fixable } : {}),
-	...(opts.hasSuggestions !== undefined
-		? { hasSuggestions: opts.hasSuggestions }
-		: {}),
-	...(opts.messages !== undefined ? { messages: opts.messages } : {}),
-	docs: {
-		description: opts.description,
-		...opts.docs
+	readonly schema?: RuleOptionsSchema | undefined;
+	readonly defaultOptions?: OxlintOptions | undefined;
+	readonly deprecated?: boolean | RuleDeprecatedInfo | undefined;
+	readonly replacedBy?: ReadonlyArray<string> | undefined;
+}): RuleMeta => {
+	const result: RuleMeta = {
+		type: opts.type,
+		docs: { description: opts.description, ...opts.docs }
+	};
+	if (opts.fixable !== undefined) result.fixable = opts.fixable;
+	if (opts.hasSuggestions !== undefined) {
+		result.hasSuggestions = opts.hasSuggestions;
 	}
-});
+	if (opts.messages !== undefined) result.messages = opts.messages;
+	if (opts.schema !== undefined) result.schema = opts.schema;
+	if (opts.defaultOptions !== undefined) {
+		result.defaultOptions = opts.defaultOptions;
+	}
+	if (opts.deprecated !== undefined) result.deprecated = opts.deprecated;
+	if (opts.replacedBy !== undefined) result.replacedBy = opts.replacedBy;
+	return result;
+};
 
 // ---------------------------------------------------------------------------
 // Convenience rule factories (common patterns)
