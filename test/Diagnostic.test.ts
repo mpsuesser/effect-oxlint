@@ -229,4 +229,24 @@ describe('Diagnostic.composeFixes', () => {
 		expect(Array.isArray(result)).toBe(true);
 		expect(result).toHaveLength(0);
 	});
+
+	test('flattens array, iterator, and nullish fix results in order', () => {
+		const a: OxlintFix = { range: [0, 1], text: 'a' };
+		const b: OxlintFix = { range: [1, 2], text: 'b' };
+		const c: OxlintFix = { range: [2, 3], text: 'c' };
+		const d: OxlintFix = { range: [3, 4], text: 'd' };
+		const composed = Diagnostic.composeFixes(
+			() => a,
+			() => [b, null, undefined],
+			() => null,
+			function* () {
+				yield c;
+				yield null;
+				yield d;
+			},
+			() => undefined
+		);
+		const { fixer } = createMockFixer();
+		expect(composed(fixer)).toEqual([a, b, c, d]);
+	});
 });

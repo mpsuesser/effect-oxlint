@@ -414,15 +414,7 @@ describe('memberPath', () => {
 	});
 
 	test('extracts three-segment path: a.b.c', () => {
-		// Build a.b.c manually: MemberExpression(MemberExpression(a, b), c)
-		const ab = Testing.memberExpr('a', 'b');
-		const abc = {
-			type: 'MemberExpression',
-			object: ab,
-			property: Testing.id('c'),
-			computed: false,
-			optional: false
-		} as never;
+		const abc = Testing.chainedMemberExpr('a', 'b', 'c');
 		const result = AST.memberPath(abc);
 		expect(Option.isSome(result)).toBe(true);
 		expect(
@@ -437,14 +429,10 @@ describe('memberPath', () => {
 	});
 
 	test('returns None when inner segment is computed', () => {
-		const inner = Testing.computedMemberExpr('a', 'b');
 		const outer = {
-			type: 'MemberExpression',
-			object: inner,
-			property: Testing.id('c'),
-			computed: false,
-			optional: false
-		} as never;
+			...Testing.memberExpr('x', 'c'),
+			object: Testing.computedMemberExpr('a', 'b')
+		};
 		const result = AST.memberPath(outer);
 		expect(Option.isNone(result)).toBe(true);
 	});
@@ -452,12 +440,9 @@ describe('memberPath', () => {
 	test('returns None when root is not an identifier', () => {
 		// root is a Literal, not an Identifier
 		const node = {
-			type: 'MemberExpression',
-			object: Testing.strLiteral('foo'),
-			property: Testing.id('bar'),
-			computed: false,
-			optional: false
-		} as never;
+			...Testing.memberExpr('x', 'bar'),
+			object: Testing.strLiteral('foo')
+		};
 		const result = AST.memberPath(node);
 		expect(Option.isNone(result)).toBe(true);
 	});

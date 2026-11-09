@@ -4,9 +4,12 @@
  * Provides AST node builders, mock context factories, rule runners,
  * and assertion helpers for use with `@effect/vitest`.
  *
+ * Import it from the `effect-oxlint/testing` subpath so production
+ * bundles never include it.
+ *
  * @example
  * ```ts
- * import { Testing, Rule } from 'effect-oxlint'
+ * import * as Testing from 'effect-oxlint/testing'
  *
  * const result = Testing.runRule(myRule, 'ThrowStatement', Testing.throwStmt())
  * Testing.expectDiagnostics(result, [{ message: 'No throw in Effect.gen' }])
@@ -35,18 +38,31 @@ import * as P from 'effect/Predicate';
 import { fromOxlintContext, RuleContext } from './RuleContext.ts';
 
 // ---------------------------------------------------------------------------
-// AST Node Builders
+// Mock boundary
 // ---------------------------------------------------------------------------
 
 /**
- * Minimal AST node builders for tests.
+ * Present a hand-built fixture as the oxlint type a builder promises.
  *
- * These produce mock objects satisfying the type shapes that AST/Visitor/Rule
- * modules expect. They use boundary casts at the seam between test mock
- * data and oxlint's strict branded types.
+ * Every builder in this module goes through this one cast.
  *
- * @since 0.2.0
+ * @internal
  */
+// oxlint-disable-next-line effect/no-object-parameters -- fixtures are arbitrary partial stand-ins; see SAFETY below.
+const mock = <A>(fixture: object): A =>
+	// SAFETY: fixtures carry only the fields that effect-oxlint and typical
+	// rules read. oxlint's node, token, scope and context types also require
+	// parser-owned data (parent links, spans, scope managers) that a test
+	// fixture cannot produce. Tests exercise the fields the builders set.
+	fixture as A;
+
+// ---------------------------------------------------------------------------
+// AST Node Builders
+// ---------------------------------------------------------------------------
+
+// Minimal fixtures with the fields that the AST, Visitor and Rule modules
+// read. They are not full parser output: parent links, spans and other
+// parser-owned fields are absent unless a builder documents otherwise.
 
 /**
  * Identifier: `{ type: "Identifier", name }`
@@ -54,7 +70,7 @@ import { fromOxlintContext, RuleContext } from './RuleContext.ts';
  * @since 0.2.0
  */
 export const id = (name: string): ESTree.IdentifierName =>
-	({ type: 'Identifier', name }) as never;
+	mock({ type: 'Identifier', name });
 
 /**
  * MemberExpression: `obj.prop` (non-computed)
@@ -65,13 +81,13 @@ export const memberExpr = (
 	obj: string,
 	prop: string
 ): ESTree.MemberExpression =>
-	({
+	mock({
 		type: 'MemberExpression',
 		object: id(obj),
 		property: id(prop),
 		computed: false,
 		optional: false
-	}) as never;
+	});
 
 /**
  * MemberExpression: `obj[prop]` (computed)
@@ -82,13 +98,13 @@ export const computedMemberExpr = (
 	obj: string,
 	prop: string
 ): ESTree.MemberExpression =>
-	({
+	mock({
 		type: 'MemberExpression',
 		object: id(obj),
 		property: id(prop),
 		computed: true,
 		optional: false
-	}) as never;
+	});
 
 /**
  * Chained MemberExpression: `a.b.c` (non-computed)
@@ -100,17 +116,14 @@ export const chainedMemberExpr = (
 ): ESTree.MemberExpression => {
 	const [first, second, ...rest] = names;
 	const initial = memberExpr(first, second);
-	return Arr.reduce(
-		rest,
-		initial,
-		(acc, name) =>
-			({
-				type: 'MemberExpression',
-				object: acc,
-				property: id(name),
-				computed: false,
-				optional: false
-			}) as never
+	return Arr.reduce(rest, initial, (acc, name) =>
+		mock({
+			type: 'MemberExpression',
+			object: acc,
+			property: id(name),
+			computed: false,
+			optional: false
+		})
 	);
 };
 
@@ -123,11 +136,11 @@ export const callExpr = (
 	name: string,
 	args: ReadonlyArray<unknown> = []
 ): ESTree.CallExpression =>
-	({
+	mock({
 		type: 'CallExpression',
 		callee: id(name),
 		arguments: args
-	}) as never;
+	});
 
 /**
  * CallExpression with MemberExpression callee: `obj.prop(args)`
@@ -139,11 +152,11 @@ export const callOfMember = (
 	prop: string,
 	args: ReadonlyArray<unknown> = []
 ): ESTree.CallExpression =>
-	({
+	mock({
 		type: 'CallExpression',
 		callee: memberExpr(obj, prop),
 		arguments: args
-	}) as never;
+	});
 
 /**
  * ImportDeclaration: `import ... from "source"`
@@ -151,11 +164,11 @@ export const callOfMember = (
  * @since 0.2.0
  */
 export const importDecl = (source: string): ESTree.ImportDeclaration =>
-	({
+	mock({
 		type: 'ImportDeclaration',
 		source: { type: 'Literal', value: source },
 		specifiers: []
-	}) as never;
+	});
 
 /**
  * String literal: `{ type: "Literal", value }`
@@ -163,7 +176,7 @@ export const importDecl = (source: string): ESTree.ImportDeclaration =>
  * @since 0.2.0
  */
 export const strLiteral = (value: string): ESTree.StringLiteral =>
-	({ type: 'Literal', value }) as never;
+	mock({ type: 'Literal', value });
 
 /**
  * Numeric literal: `{ type: "Literal", value }`
@@ -171,7 +184,7 @@ export const strLiteral = (value: string): ESTree.StringLiteral =>
  * @since 0.2.0
  */
 export const numLiteral = (value: number): ESTree.NumericLiteral =>
-	({ type: 'Literal', value }) as never;
+	mock({ type: 'Literal', value });
 
 /**
  * Boolean literal: `{ type: "Literal", value }`
@@ -179,7 +192,7 @@ export const numLiteral = (value: number): ESTree.NumericLiteral =>
  * @since 0.2.0
  */
 export const boolLiteral = (value: boolean): ESTree.BooleanLiteral =>
-	({ type: 'Literal', value }) as never;
+	mock({ type: 'Literal', value });
 
 /**
  * ObjectExpression with identifier-keyed properties.
@@ -192,14 +205,14 @@ export const objectExpr = (
 		readonly value?: unknown;
 	}>
 ): ESTree.ObjectExpression =>
-	({
+	mock({
 		type: 'ObjectExpression',
 		properties: Arr.map(properties, (p) => ({
 			type: 'Property',
 			key: id(p.key),
 			value: p.value ?? strLiteral('')
 		}))
-	}) as never;
+	});
 
 /**
  * ObjectExpression with string literal keys.
@@ -212,14 +225,14 @@ export const objectExprLiteralKeys = (
 		readonly value?: unknown;
 	}>
 ): ESTree.ObjectExpression =>
-	({
+	mock({
 		type: 'ObjectExpression',
 		properties: Arr.map(properties, (p) => ({
 			type: 'Property',
 			key: strLiteral(p.key),
 			value: p.value ?? strLiteral('')
 		}))
-	}) as never;
+	});
 
 /**
  * ObjectExpression with a SpreadElement.
@@ -229,10 +242,10 @@ export const objectExprLiteralKeys = (
 export const objectExprWithSpread = (
 	spreadArg: unknown
 ): ESTree.ObjectExpression =>
-	({
+	mock({
 		type: 'ObjectExpression',
 		properties: [{ type: 'SpreadElement', argument: spreadArg }]
-	}) as never;
+	});
 
 /**
  * ThrowStatement.
@@ -240,14 +253,14 @@ export const objectExprWithSpread = (
  * @since 0.2.0
  */
 export const throwStmt = (): ESTree.ThrowStatement =>
-	({ type: 'ThrowStatement' }) as never;
+	mock({ type: 'ThrowStatement' });
 
 /**
  * TryStatement.
  *
  * @since 0.2.0
  */
-export const tryStmt = (): ESTree.Node => ({ type: 'TryStatement' }) as never;
+export const tryStmt = (): ESTree.Node => mock({ type: 'TryStatement' });
 
 /**
  * ReturnStatement.
@@ -255,7 +268,7 @@ export const tryStmt = (): ESTree.Node => ({ type: 'TryStatement' }) as never;
  * @since 0.2.0
  */
 export const returnStmt = (argument?: unknown): ESTree.ReturnStatement =>
-	({ type: 'ReturnStatement', argument: argument ?? null }) as never;
+	mock({ type: 'ReturnStatement', argument: argument ?? null });
 
 /**
  * BlockStatement.
@@ -265,7 +278,7 @@ export const returnStmt = (argument?: unknown): ESTree.ReturnStatement =>
 export const blockStmt = (
 	body: ReadonlyArray<unknown> = []
 ): ESTree.BlockStatement =>
-	({ type: 'BlockStatement', body: Array.from(body) }) as never;
+	mock({ type: 'BlockStatement', body: Array.from(body) });
 
 /**
  * ArrowFunctionExpression.
@@ -276,13 +289,13 @@ export const arrowFn = (
 	body?: unknown,
 	params: ReadonlyArray<unknown> = []
 ): ESTree.ArrowFunctionExpression =>
-	({
+	mock({
 		type: 'ArrowFunctionExpression',
 		params: Array.from(params),
 		body: body ?? blockStmt(),
 		expression: false,
 		async: false
-	}) as never;
+	});
 
 /**
  * VariableDeclaration: `const/let/var name = init`
@@ -294,7 +307,7 @@ export const varDecl = (
 	name: string,
 	init?: unknown
 ): ESTree.VariableDeclaration =>
-	({
+	mock({
 		type: 'VariableDeclaration',
 		kind,
 		declarations: [
@@ -304,7 +317,7 @@ export const varDecl = (
 				init: init ?? null
 			}
 		]
-	}) as never;
+	});
 
 /**
  * ExpressionStatement.
@@ -312,7 +325,7 @@ export const varDecl = (
  * @since 0.2.0
  */
 export const exprStmt = (expression: unknown): ESTree.ExpressionStatement =>
-	({ type: 'ExpressionStatement', expression }) as never;
+	mock({ type: 'ExpressionStatement', expression });
 
 /**
  * Program node.
@@ -323,12 +336,12 @@ export const program = (
 	body: ReadonlyArray<unknown> = [],
 	comments: ReadonlyArray<unknown> = []
 ): ESTree.Program =>
-	({
+	mock({
 		type: 'Program',
 		body: Array.from(body),
 		comments: Array.from(comments),
 		sourceType: 'module'
-	}) as never;
+	});
 
 /**
  * IfStatement.
@@ -343,12 +356,12 @@ export const ifStmt = (
 	consequent?: unknown,
 	alternate?: unknown
 ): ESTree.IfStatement =>
-	({
+	mock({
 		type: 'IfStatement',
 		test: test ?? null,
 		consequent: consequent ?? null,
 		alternate: alternate ?? null
-	}) as never;
+	});
 
 /**
  * BinaryExpression.
@@ -360,7 +373,7 @@ export const binaryExpr = (
 	left: unknown,
 	right: unknown
 ): ESTree.BinaryExpression =>
-	({ type: 'BinaryExpression', operator, left, right }) as never;
+	mock({ type: 'BinaryExpression', operator, left, right });
 
 /**
  * NewExpression: `new callee(args)`
@@ -370,18 +383,26 @@ export const binaryExpr = (
  *
  * @since 0.2.0
  */
-export const newExpr: {
-	(callee: string, args?: ReadonlyArray<unknown>): ESTree.NewExpression;
-	(callee: unknown, args?: ReadonlyArray<unknown>): ESTree.NewExpression;
-} = (
+export const newExpr = (
 	callee: unknown,
 	args: ReadonlyArray<unknown> = []
 ): ESTree.NewExpression =>
-	({
+	mock({
 		type: 'NewExpression',
 		callee: P.isString(callee) ? id(callee) : callee,
 		arguments: Array.from(args)
-	}) as never;
+	});
+
+/**
+ * A minimal node with a `type` and an optional `.parent` link, as built by
+ * `astNode` and `withParentChain`.
+ *
+ * @since 0.5.0
+ */
+export interface MockAncestorNode {
+	readonly type: string;
+	readonly parent?: unknown;
+}
 
 /**
  * A generic AST node with type and optional parent pointer.
@@ -390,8 +411,8 @@ export const newExpr: {
  */
 export const astNode = (
 	type: string,
-	parent?: { readonly type: string; readonly parent?: unknown }
-): { readonly type: string; readonly parent?: unknown } => ({
+	parent?: MockAncestorNode
+): MockAncestorNode => ({
 	type,
 	parent
 });
@@ -412,15 +433,8 @@ export const astNode = (
 export const withParentChain = (
 	first: string,
 	...rest: ReadonlyArray<string>
-): { readonly type: string; readonly parent?: unknown } =>
-	Arr.reduce(
-		rest,
-		astNode(first) satisfies {
-			readonly type: string;
-			readonly parent?: unknown;
-		},
-		(parent, type) => astNode(type, parent)
-	);
+): MockAncestorNode =>
+	Arr.reduce(rest, astNode(first), (parent, type) => astNode(type, parent));
 
 /**
  * Mock Token.
@@ -428,7 +442,7 @@ export const withParentChain = (
  * @since 0.2.0
  */
 export const token = (type: Token['type'], value: string): Token =>
-	({
+	mock({
 		type,
 		value,
 		start: 0,
@@ -439,7 +453,7 @@ export const token = (type: Token['type'], value: string): Token =>
 			end: { line: 1, column: value.length }
 		},
 		regex: undefined
-	}) as never;
+	});
 
 /**
  * Mock Comment.
@@ -447,7 +461,7 @@ export const token = (type: Token['type'], value: string): Token =>
  * @since 0.2.0
  */
 export const comment = (type: Comment['type'], value: string): Comment =>
-	({
+	mock({
 		type,
 		value,
 		start: 0,
@@ -457,7 +471,7 @@ export const comment = (type: Comment['type'], value: string): Comment =>
 			start: { line: 1, column: 0 },
 			end: { line: 1, column: value.length + 4 }
 		}
-	}) as never;
+	});
 
 /**
  * Mock Scope with minimal surface.
@@ -474,19 +488,19 @@ export const scope = (
 ): OxlintScope => {
 	const vars = Array.from(opts.variables ?? []);
 	const set = new Map<string, Variable>(vars.map((v) => [v.name, v]));
-	return {
+	return mock({
 		type: opts.type ?? 'function',
 		isStrict: opts.isStrict ?? false,
 		upper: opts.upper ?? null,
 		childScopes: [],
-		variableScope: null as never,
-		block: {} as never,
+		variableScope: null,
+		block: {},
 		variables: vars,
 		set,
 		references: [],
 		through: [],
 		functionExpressionScope: false
-	};
+	});
 };
 
 /**
@@ -498,6 +512,7 @@ export const variable = (
 	name: string,
 	opts: {
 		readonly references?: ReadonlyArray<{
+			readonly init?: boolean;
 			readonly isRead: () => boolean;
 			readonly isWrite: () => boolean;
 			readonly isReadOnly: () => boolean;
@@ -506,13 +521,13 @@ export const variable = (
 		}>;
 	} = {}
 ): Variable =>
-	({
+	mock({
 		name,
-		scope: {} as never,
+		scope: {},
 		identifiers: [id(name)],
 		references: Array.from(opts.references ?? []),
 		defs: []
-	}) as never;
+	});
 
 // ---------------------------------------------------------------------------
 // Statement Builders
@@ -524,7 +539,7 @@ export const variable = (
  * @since 0.2.0
  */
 export const switchStmt = (): ESTree.SwitchStatement =>
-	({ type: 'SwitchStatement', discriminant: null, cases: [] }) as never;
+	mock({ type: 'SwitchStatement', discriminant: null, cases: [] });
 
 /**
  * ForStatement.
@@ -532,13 +547,13 @@ export const switchStmt = (): ESTree.SwitchStatement =>
  * @since 0.2.0
  */
 export const forStmt = (): ESTree.ForStatement =>
-	({
+	mock({
 		type: 'ForStatement',
 		init: null,
 		test: null,
 		update: null,
 		body: blockStmt()
-	}) as never;
+	});
 
 /**
  * ForInStatement.
@@ -546,12 +561,12 @@ export const forStmt = (): ESTree.ForStatement =>
  * @since 0.2.0
  */
 export const forInStmt = (): ESTree.ForInStatement =>
-	({
+	mock({
 		type: 'ForInStatement',
 		left: id('_'),
 		right: id('_'),
 		body: blockStmt()
-	}) as never;
+	});
 
 /**
  * ForOfStatement.
@@ -559,13 +574,13 @@ export const forInStmt = (): ESTree.ForInStatement =>
  * @since 0.2.0
  */
 export const forOfStmt = (): ESTree.ForOfStatement =>
-	({
+	mock({
 		type: 'ForOfStatement',
 		await: false,
 		left: id('_'),
 		right: id('_'),
 		body: blockStmt()
-	}) as never;
+	});
 
 /**
  * WhileStatement.
@@ -573,11 +588,11 @@ export const forOfStmt = (): ESTree.ForOfStatement =>
  * @since 0.2.0
  */
 export const whileStmt = (): ESTree.WhileStatement =>
-	({
+	mock({
 		type: 'WhileStatement',
 		test: boolLiteral(true),
 		body: blockStmt()
-	}) as never;
+	});
 
 /**
  * DoWhileStatement.
@@ -585,11 +600,11 @@ export const whileStmt = (): ESTree.WhileStatement =>
  * @since 0.2.0
  */
 export const doWhileStmt = (): ESTree.DoWhileStatement =>
-	({
+	mock({
 		type: 'DoWhileStatement',
 		test: boolLiteral(true),
 		body: blockStmt()
-	}) as never;
+	});
 
 // ---------------------------------------------------------------------------
 // Expression Builders
@@ -604,11 +619,11 @@ export const yieldExpr = (
 	argument?: unknown,
 	delegate: boolean = false
 ): ESTree.YieldExpression =>
-	({
+	mock({
 		type: 'YieldExpression',
 		argument: argument ?? null,
 		delegate
-	}) as never;
+	});
 
 /**
  * UnaryExpression: `operator argument`
@@ -619,7 +634,7 @@ export const unaryExpr = (
 	operator: string,
 	argument: unknown
 ): ESTree.UnaryExpression =>
-	({ type: 'UnaryExpression', operator, prefix: true, argument }) as never;
+	mock({ type: 'UnaryExpression', operator, prefix: true, argument });
 
 // ---------------------------------------------------------------------------
 // Declaration Builders
@@ -634,11 +649,11 @@ export const varDeclarator = (
 	name: string,
 	init?: unknown
 ): ESTree.VariableDeclarator =>
-	({
+	mock({
 		type: 'VariableDeclarator',
 		id: id(name),
 		init: init ?? null
-	}) as never;
+	});
 
 /**
  * ExportNamedDeclaration.
@@ -648,12 +663,12 @@ export const varDeclarator = (
 export const exportNamedDecl = (
 	declaration?: unknown
 ): ESTree.ExportNamedDeclaration =>
-	({
+	mock({
 		type: 'ExportNamedDeclaration',
 		declaration: declaration ?? null,
 		specifiers: [],
 		source: null
-	}) as never;
+	});
 
 // ---------------------------------------------------------------------------
 // Import Specifier Builders
@@ -669,12 +684,12 @@ export const importDeclWithSpecifiers = (
 	specifiers: ReadonlyArray<unknown>,
 	importKind: string = 'value'
 ): ESTree.ImportDeclaration =>
-	({
+	mock({
 		type: 'ImportDeclaration',
 		source: { type: 'Literal', value: source },
 		specifiers: Array.from(specifiers),
 		importKind
-	}) as never;
+	});
 
 /**
  * ImportSpecifier: `{ imported as local }`
@@ -686,12 +701,12 @@ export const importSpecifier = (
 	local?: string,
 	importKind: string = 'value'
 ): ESTree.ImportSpecifier =>
-	({
+	mock({
 		type: 'ImportSpecifier',
 		imported: id(imported),
 		local: id(local ?? imported),
 		importKind
-	}) as never;
+	});
 
 /**
  * ImportNamespaceSpecifier: `* as local`
@@ -701,10 +716,10 @@ export const importSpecifier = (
 export const importNamespaceSpecifier = (
 	local: string
 ): ESTree.ImportNamespaceSpecifier =>
-	({
+	mock({
 		type: 'ImportNamespaceSpecifier',
 		local: id(local)
-	}) as never;
+	});
 
 // ---------------------------------------------------------------------------
 // TypeScript Node Builders
@@ -717,14 +732,14 @@ export const importNamespaceSpecifier = (
  */
 export const tsAsExpr = (
 	typeKind: string,
-	parent?: { readonly type: string; readonly parent?: unknown }
+	parent?: MockAncestorNode
 ): ESTree.TSAsExpression =>
-	({
+	mock({
 		type: 'TSAsExpression',
 		expression: id('_'),
 		typeAnnotation: { type: typeKind },
 		parent
-	}) as never;
+	});
 
 /**
  * TSUnionType: `A | B | C`
@@ -734,10 +749,10 @@ export const tsAsExpr = (
 export const tsUnionType = (
 	typeKinds: ReadonlyArray<string>
 ): ESTree.TSUnionType =>
-	({
+	mock({
 		type: 'TSUnionType',
 		types: Arr.map(typeKinds, (t) => ({ type: t }))
-	}) as never;
+	});
 
 /**
  * TSTypeReference: `TypeName`
@@ -745,11 +760,11 @@ export const tsUnionType = (
  * @since 0.2.0
  */
 export const tsTypeRef = (name: string): ESTree.TSTypeReference =>
-	({
+	mock({
 		type: 'TSTypeReference',
 		typeName: id(name),
 		typeArguments: null
-	}) as never;
+	});
 
 /**
  * TSTypeLiteral: `{ ... }` with N members.
@@ -757,12 +772,12 @@ export const tsTypeRef = (name: string): ESTree.TSTypeReference =>
  * @since 0.2.0
  */
 export const tsTypeLiteral = (memberCount: number): ESTree.TSTypeLiteral =>
-	({
+	mock({
 		type: 'TSTypeLiteral',
 		members: Array.from({ length: memberCount }, () => ({
 			type: 'TSPropertySignature'
 		}))
-	}) as never;
+	});
 
 /**
  * TSInterfaceDeclaration: `interface Name { }`
@@ -770,11 +785,11 @@ export const tsTypeLiteral = (memberCount: number): ESTree.TSTypeLiteral =>
  * @since 0.2.0
  */
 export const interfaceDecl = (name: string): ESTree.TSInterfaceDeclaration =>
-	({
+	mock({
 		type: 'TSInterfaceDeclaration',
 		id: { type: 'BindingIdentifier', name },
 		body: { type: 'TSInterfaceBody', body: [] }
-	}) as never;
+	});
 
 /**
  * TSTypeAliasDeclaration: `type Name = ...`
@@ -782,11 +797,11 @@ export const interfaceDecl = (name: string): ESTree.TSInterfaceDeclaration =>
  * @since 0.2.0
  */
 export const typeAliasDecl = (name: string): ESTree.TSTypeAliasDeclaration =>
-	({
+	mock({
 		type: 'TSTypeAliasDeclaration',
 		id: { type: 'BindingIdentifier', name },
 		typeAnnotation: null
-	}) as never;
+	});
 
 // ---------------------------------------------------------------------------
 // Class Node Builders
@@ -818,7 +833,7 @@ export const classDecl = (
 		readonly members?: ReadonlyArray<unknown>;
 	} = {}
 ): ESTree.Class =>
-	({
+	mock({
 		type: 'ClassDeclaration',
 		id: { type: 'BindingIdentifier', name },
 		superClass: opts.superClass ?? null,
@@ -827,7 +842,7 @@ export const classDecl = (
 			body: Array.from(opts.members ?? [])
 		},
 		decorators: []
-	}) as never;
+	});
 
 /**
  * PropertyDefinition: class field.
@@ -838,14 +853,14 @@ export const propertyDef = (
 	name: string,
 	isStatic: boolean = false
 ): ESTree.PropertyDefinition =>
-	({
+	mock({
 		type: 'PropertyDefinition',
 		key: id(name),
 		value: null,
 		computed: false,
 		static: isStatic,
 		decorators: []
-	}) as never;
+	});
 
 /**
  * MethodDefinition: class method.
@@ -856,7 +871,7 @@ export const methodDef = (
 	name: string,
 	isStatic: boolean = false
 ): ESTree.MethodDefinition =>
-	({
+	mock({
 		type: 'MethodDefinition',
 		key: id(name),
 		kind: 'method',
@@ -864,7 +879,7 @@ export const methodDef = (
 		computed: false,
 		static: isStatic,
 		decorators: []
-	}) as never;
+	});
 
 // ---------------------------------------------------------------------------
 // Mock Context
@@ -1007,7 +1022,7 @@ export const createMockContext = (
 			return false;
 		}
 	};
-	const context = {
+	const context = mock<OxlintContext>({
 		id: 'effect/test-rule',
 		filename,
 		physicalFilename: filename,
@@ -1028,7 +1043,7 @@ export const createMockContext = (
 		getPhysicalFilename: () => filename,
 		parserOptions: {},
 		parserPath: undefined
-	} as unknown as OxlintContext;
+	});
 
 	return { context, diagnostics };
 };
@@ -1073,8 +1088,11 @@ const callHandler = (
 	visitorNode: unknown
 ): void => {
 	const handler = visitors[key];
-	// Boundary cast: test nodes are plain objects, not real AST nodes
-	if (handler) handler(visitorNode as never);
+	if (handler) {
+		// SAFETY: test nodes are plain fixtures standing in for parsed nodes;
+		// handlers only read the fields the fixture provides.
+		handler(visitorNode as never);
+	}
 };
 
 /**

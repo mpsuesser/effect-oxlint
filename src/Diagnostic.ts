@@ -15,7 +15,6 @@ import type {
 } from '@oxlint/plugins';
 import * as Arr from 'effect/Array';
 import { dual } from 'effect/Function';
-import * as Option from 'effect/Option';
 import * as P from 'effect/Predicate';
 import * as Result from 'effect/Result';
 
@@ -158,30 +157,23 @@ export const removeFix =
 	(fixer) =>
 		fixer.remove(nodeOrToken);
 
-/** @internal Type guard for an oxlint Fix value (has `range` and `text`). */
-const isFix = (value: unknown): value is OxlintFix =>
-	P.isObject(value) && 'range' in value && 'text' in value;
-
 /**
- * Extract fixes from a single `FixFn` result.
+ * Normalize a single `FixFn` result into a flat list of fixes.
  *
- * The parameter is typed as `unknown` because oxlint's `FixFn` returns
- * a nullable union (`Fix | Array<Fix | null> | IterableIterator<…> | null`).
- * We guard at the boundary instead of mirroring the nullable upstream type.
+ * oxlint lets a fix function return one fix, an array or iterator of
+ * nullable fixes, or nothing at all. A single `Fix` is a plain object,
+ * so anything iterable is a collection of fixes.
  *
  * @internal
  */
-const extractFixes = (result: unknown): ReadonlyArray<OxlintFix> => {
-	if (result === null || result === undefined) return [];
-	if (isFix(result)) return [result];
-	if (!P.isIterable(result)) return [];
-	return Arr.filterMap(Array.from(result), (item) =>
-		Option.fromNullishOr(item).pipe(
-			Option.filter(isFix),
-			Result.fromOption(() => undefined)
-		)
-	);
-};
+const extractFixes = (result: ReturnType<FixFn>): ReadonlyArray<OxlintFix> =>
+	P.isNullish(result)
+		? []
+		: P.isIterable(result)
+			? Arr.filterMap(Array.from(result), (item) =>
+					P.isNullish(item) ? Result.failVoid : Result.succeed(item)
+				)
+			: [result];
 
 /**
  * Compose multiple fix functions into one.

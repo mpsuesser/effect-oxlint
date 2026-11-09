@@ -39,10 +39,14 @@ import { RuleContext } from './RuleContext.ts';
  * example:
  *
  * ```ts
+ * const ctx = yield* RuleContext
+ *
  * Visitor.on('CallExpression', (node) =>
  *   someFallibleEffect(node).pipe(
  *     Effect.catch((error) =>
- *       RuleContext.report({ node, message: `rule failure: ${error._tag}` })
+ *       ctx.report(
+ *         Diagnostic.make({ node, message: `rule failure: ${error._tag}` })
+ *       )
  *     )
  *   )
  * )
@@ -72,7 +76,7 @@ export type EffectVisitor = {
 
 /** @internal Extract the node parameter type from an oxlint visitor handler. */
 type ExtractNode<H> = H extends
-	| ((node: infer N) => unknown)
+	| ((node: infer N) => void)
 	| { bivarianceHack(node: infer N): void }
 	? N
 	: ESTree.Node;
@@ -112,16 +116,21 @@ export type TypedEffectVisitor = {
 /**
  * Create a single-entry visitor that handles one node type.
  *
- * The handler is a generator function that can `yield*` Effects.
+ * The handler receives the node narrowed to the key's ESTree type and
+ * returns an `Effect`. Use `Effect.gen` for multi-step handlers.
  *
  * @example
  * ```ts
- * Visitor.on('ThrowStatement', function*(node) {
- *   const depth = yield* Ref.get(myDepthRef)
- *   if (depth > 0) {
- *     yield* RuleContext.report({ node, message: '...' })
- *   }
- * })
+ * const ctx = yield* RuleContext
+ * const depth = yield* Ref.make(0)
+ *
+ * Visitor.on('ThrowStatement', (node) =>
+ *   Effect.gen(function* () {
+ *     if ((yield* Ref.get(depth)) > 0) {
+ *       yield* ctx.report(Diagnostic.make({ node, message: 'No throw' }))
+ *     }
+ *   })
+ * )
  * ```
  *
  * @since 0.1.0
@@ -129,17 +138,32 @@ export type TypedEffectVisitor = {
 export const on = <K extends string>(
 	nodeType: K,
 	handler: EffectHandler<VisitorNodeType<K>>
-): EffectVisitor => ({ [nodeType]: handler as EffectHandler });
+	// oxlint-disable-next-line effect/no-known-value-widening -- `EffectVisitor` is the public merge contract that `merge` and `Rule.define` consume.
+): EffectVisitor => ({
+	// SAFETY: oxlint only calls the `nodeType` handler with nodes of that
+	// type, so the handler never sees the wider `ESTree.Node` it is typed as.
+	[nodeType]: handler as EffectHandler
+});
 
 /**
  * Create a single-entry visitor for the exit phase of a node type.
+ *
+ * @example
+ * ```ts
+ * Visitor.onExit('FunctionDeclaration', () => Ref.update(depth, (n) => n - 1))
+ * ```
  *
  * @since 0.1.0
  */
 export const onExit = <K extends string>(
 	nodeType: K,
 	handler: EffectHandler<VisitorNodeType<K>>
-): EffectVisitor => ({ [`${nodeType}:exit`]: handler as EffectHandler });
+	// oxlint-disable-next-line effect/no-known-value-widening -- `EffectVisitor` is the public merge contract that `merge` and `Rule.define` consume.
+): EffectVisitor => ({
+	// SAFETY: oxlint only calls the `${nodeType}:exit` handler with nodes of
+	// that type, so the handler never sees the wider `ESTree.Node`.
+	[`${nodeType}:exit`]: handler as EffectHandler
+});
 
 // ---------------------------------------------------------------------------
 // Combinators
@@ -194,16 +218,15 @@ export const tracked = <K extends string>(
 	nodeType: K,
 	predicate: (node: VisitorNodeType<K>) => boolean,
 	ref: Ref.Ref<number>
-): EffectVisitor => ({
-	[nodeType]: (node: ESTree.Node) =>
-		predicate(node as VisitorNodeType<K>)
-			? Ref.update(ref, (n) => n + 1)
-			: Effect.void,
-	[`${nodeType}:exit`]: (node: ESTree.Node) =>
-		predicate(node as VisitorNodeType<K>)
-			? Ref.update(ref, (n) => n - 1)
-			: Effect.void
-});
+): EffectVisitor =>
+	merge(
+		on(nodeType, (node) =>
+			predicate(node) ? Ref.update(ref, (n) => n + 1) : Effect.void
+		),
+		onExit(nodeType, (node) =>
+			predicate(node) ? Ref.update(ref, (n) => n - 1) : Effect.void
+		)
+	);
 
 /**
  * Conditionally apply a visitor based on a predicate evaluated once
@@ -251,14 +274,15 @@ export const filter: {
  *
  * @example
  * ```ts
- * Visitor.accumulate(
+ * const visitor = yield* Visitor.accumulate(
  *   'ExportNamedDeclaration',
- *   (node) => AST.narrow(node, 'ExportNamedDeclaration').pipe(
- *     Option.map(n => n.declaration)
- *   ),
- *   function*(accumulated) {
- *     // Analyze all collected declarations at end of file
- *   }
+ *   (node) => AST.narrow(node, 'ExportNamedDeclaration'),
+ *   (exports) =>
+ *     Arr.isReadonlyArrayNonEmpty(exports) && exports.length > 10
+ *       ? ctx.report(
+ *           Diagnostic.make({ node: exports[0], message: 'Too many exports' })
+ *         )
+ *       : Effect.void
  * )
  * ```
  *

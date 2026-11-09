@@ -78,9 +78,9 @@ export const getNodeText = (
 /**
  * Get the ancestor nodes of the given node, from innermost to outermost.
  *
- * Note: oxlint types `getAncestors` as returning `Node[]` where `Node`
- * is the base `Span` interface. At runtime these are full `ESTree.Node`
- * values — the cast bridges this upstream type gap at the FFI boundary.
+ * oxlint types `getAncestors` as returning its base `Node` (`Span`)
+ * interface. At runtime these are full `ESTree.Node` values, so this
+ * wrapper returns them as such.
  *
  * @since 0.2.0
  */
@@ -88,10 +88,12 @@ export const getAncestors = (
 	node: ESTree.Node
 ): Effect.Effect<ReadonlyArray<ESTree.Node>, never, RuleContext> =>
 	withSourceCode(
-		// oxlint-ignore(casting-awareness,avoid-any): FFI boundary —
-		// oxlint's `Node` (Span) is structurally narrower than `ESTree.Node`
-		// but the runtime values are full ESTree nodes.
-		(sc) => sc.getAncestors(node) as unknown as ReadonlyArray<ESTree.Node>
+		(sc) =>
+			// SAFETY: oxlint types ancestors as its base `Node` (a `Span`), but
+			// they are the parsed AST's own nodes, so each is a full `ESTree.Node`.
+			// The two declarations do not overlap, so the cast goes via `unknown`.
+			// oxlint-disable-next-line effect/no-chained-type-assertions -- see SAFETY above.
+			sc.getAncestors(node) as unknown as ReadonlyArray<ESTree.Node>
 	);
 
 // ---------------------------------------------------------------------------

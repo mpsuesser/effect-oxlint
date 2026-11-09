@@ -5,7 +5,10 @@ import * as Option from 'effect/Option';
 import * as Testing from '../src/Testing.ts';
 import * as Rule from '../src/Rule.ts';
 import { RuleContext } from '../src/RuleContext.ts';
-import { make as makeDiagnostic } from '../src/Diagnostic.ts';
+import {
+	fromId as makeDiagnosticFromId,
+	make as makeDiagnostic
+} from '../src/Diagnostic.ts';
 
 // ---------------------------------------------------------------------------
 // createMockContext
@@ -28,7 +31,7 @@ describe('Testing.createMockContext', () => {
 
 	test('collects diagnostics on report', () => {
 		const { context, diagnostics } = Testing.createMockContext();
-		context.report({ node: { range: [0, 5] }, message: 'test' } as never);
+		context.report({ node: { range: [0, 5] }, message: 'test' });
 		expect(diagnostics).toHaveLength(1);
 		expect(diagnostics[0]?.diagnostic.message).toBe('test');
 	});
@@ -123,13 +126,13 @@ describe('Testing.expectDiagnostics', () => {
 		const result = [
 			{
 				diagnostic: makeDiagnostic({
-					node: { range: [0, 5] } as never,
+					node: { range: [0, 5] },
 					message: 'A'
 				})
 			},
 			{
 				diagnostic: makeDiagnostic({
-					node: { range: [0, 5] } as never,
+					node: { range: [0, 5] },
 					message: 'B'
 				})
 			}
@@ -142,7 +145,7 @@ describe('Testing.expectDiagnostics', () => {
 		const result = [
 			{
 				diagnostic: makeDiagnostic({
-					node: { range: [0, 5] } as never,
+					node: { range: [0, 5] },
 					message: 'A'
 				})
 			}
@@ -159,7 +162,7 @@ describe('Testing.expectDiagnostics', () => {
 		const result = [
 			{
 				diagnostic: makeDiagnostic({
-					node: { range: [0, 5] } as never,
+					node: { range: [0, 5] },
 					message: 'Wrong'
 				})
 			}
@@ -179,7 +182,7 @@ describe('Testing.expectNoDiagnostics', () => {
 		const result = [
 			{
 				diagnostic: makeDiagnostic({
-					node: { range: [0, 5] } as never,
+					node: { range: [0, 5] },
 					message: 'Oops'
 				})
 			}
@@ -244,13 +247,13 @@ describe('Testing.messages', () => {
 		const result = [
 			{
 				diagnostic: makeDiagnostic({
-					node: { range: [0, 5] } as never,
+					node: { range: [0, 5] },
 					message: 'A'
 				})
 			},
 			{
 				diagnostic: makeDiagnostic({
-					node: { range: [0, 5] } as never,
+					node: { range: [0, 5] },
 					message: 'B'
 				})
 			}
@@ -270,10 +273,10 @@ describe('Testing.messageIds', () => {
 	test('extracts messageId strings from diagnostics', () => {
 		const result = [
 			{
-				diagnostic: {
+				diagnostic: makeDiagnosticFromId({
 					node: { range: [0, 5] },
 					messageId: 'noThrow'
-				} as never
+				})
 			}
 		];
 		expect(Testing.messageIds(result)).toEqual([Option.some('noThrow')]);

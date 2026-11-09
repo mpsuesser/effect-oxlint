@@ -18,17 +18,15 @@ import * as Result from 'effect/Result';
 // ---------------------------------------------------------------------------
 
 /** @internal */
-const isIdentifier = (
-	node: unknown
-): node is ESTree.IdentifierName | ESTree.IdentifierReference =>
-	P.isObject(node) &&
-	'type' in node &&
-	node.type === 'Identifier' &&
-	'name' in node &&
-	P.isString(node.name);
+const isIdentifier = (node: {
+	readonly type: string;
+}): node is ESTree.IdentifierName | ESTree.IdentifierReference =>
+	node.type === 'Identifier' && 'name' in node && P.isString(node.name);
 
 /** @internal */
-const identifierName = (node: unknown): Option.Option<string> =>
+const identifierName = (node: {
+	readonly type: string;
+}): Option.Option<string> =>
 	isIdentifier(node) ? Option.some(node.name) : Option.none();
 
 /** @internal */
@@ -381,6 +379,12 @@ export const objectGetValue: {
 // Node narrowing
 // ---------------------------------------------------------------------------
 
+/** @internal Type guard: does the node's `type` match the literal? */
+const hasType = <T extends string>(
+	node: ESTree.Node,
+	type: T
+): node is ESTree.Node & { readonly type: T } => node.type === type;
+
 /**
  * Narrow an AST node to a specific `type` string, returning `Option<Node>`.
  *
@@ -395,12 +399,6 @@ export const objectGetValue: {
  *
  * @since 0.2.0
  */
-/** @internal Type guard: does the node's `type` match the literal? */
-const hasType = <T extends string>(
-	node: ESTree.Node,
-	type: T
-): node is ESTree.Node & { readonly type: T } => node.type === type;
-
 export const narrow: {
 	<T extends string>(
 		type: T
@@ -448,11 +446,7 @@ export const memberPath = (
 		current: ESTree.Expression | ESTree.PrivateIdentifier,
 		acc: ReadonlyArray<string>
 	): Option.Option<Arr.NonEmptyReadonlyArray<string>> => {
-		if (
-			!P.isObject(current) ||
-			!('type' in current) ||
-			current.type !== 'MemberExpression'
-		) {
+		if (current.type !== 'MemberExpression') {
 			return pipe(
 				identifierName(current),
 				Option.map(
@@ -479,15 +473,19 @@ export const memberPath = (
 // Ancestor / parent helpers
 // ---------------------------------------------------------------------------
 
-/** @internal Type guard for objects with a string `type` and optional `parent`. */
-const isASTShape = (
-	value: unknown
-): value is { readonly type: string; readonly parent?: unknown } =>
+/** @internal A node-like value with a string `type` and optional `parent`. */
+interface AncestorNode {
+	readonly type: string;
+	readonly parent?: unknown;
+}
+
+/** @internal Type guard for values that can appear on a `.parent` chain. */
+const isAncestorNode = (value: unknown): value is AncestorNode =>
 	P.isObject(value) && 'type' in value && P.isString(value.type);
 
-/** @internal Narrow an AST-shape value to a specific `type` literal. */
+/** @internal Narrow an ancestor node to a specific `type` literal. */
 const hasAncestorType = <T extends string>(
-	value: { readonly type: string; readonly parent?: unknown },
+	value: AncestorNode,
 	type: T
 ): value is { readonly type: T; readonly parent?: unknown } =>
 	value.type === type;
@@ -526,16 +524,17 @@ export const findAncestor: {
 		type: T
 	): Option.Option<{ readonly type: T; readonly parent?: unknown }> => {
 		const walk = (
-			current: unknown
+			current: AncestorNode
 		): Option.Option<{
 			readonly type: T;
 			readonly parent?: unknown;
 		}> => {
-			if (!isASTShape(current)) return Option.none();
 			if (hasAncestorType(current, type)) return Option.some(current);
-			return walk(current.parent);
+			return isAncestorNode(current.parent)
+				? walk(current.parent)
+				: Option.none();
 		};
-		return walk(node.parent);
+		return isAncestorNode(node.parent) ? walk(node.parent) : Option.none();
 	}
 );
 

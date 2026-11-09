@@ -65,7 +65,7 @@ describe('Visitor.merge', () => {
 
 			const handler = merged['ThrowStatement'];
 			if (handler) {
-				yield* handler(Testing.throwStmt() as never);
+				yield* handler(Testing.throwStmt());
 			}
 
 			const result = yield* Ref.get(log);
@@ -110,26 +110,26 @@ describe('Visitor.tracked', () => {
 				// Enter handler — increment
 				const enterHandler = visitor['CallExpression'];
 				if (enterHandler) {
-					yield* enterHandler(node as never);
+					yield* enterHandler(node);
 				}
 				expect(yield* Ref.get(depth)).toBe(1);
 
 				// Enter again (nested) — increment to 2
 				if (enterHandler) {
-					yield* enterHandler(node as never);
+					yield* enterHandler(node);
 				}
 				expect(yield* Ref.get(depth)).toBe(2);
 
 				// Exit once — decrement to 1
 				const exitHandler = visitor['CallExpression:exit'];
 				if (exitHandler) {
-					yield* exitHandler(node as never);
+					yield* exitHandler(node);
 				}
 				expect(yield* Ref.get(depth)).toBe(1);
 
 				// Exit again — decrement to 0
 				if (exitHandler) {
-					yield* exitHandler(node as never);
+					yield* exitHandler(node);
 				}
 				expect(yield* Ref.get(depth)).toBe(0);
 			}).pipe(Effect.provide(TestLayer))
@@ -147,7 +147,7 @@ describe('Visitor.tracked', () => {
 			const node = Testing.callOfMember('console', 'log');
 			const enterHandler = visitor['CallExpression'];
 			if (enterHandler) {
-				yield* enterHandler(node as never);
+				yield* enterHandler(node);
 			}
 			expect(yield* Ref.get(depth)).toBe(0);
 		}).pipe(Effect.provide(TestLayer))
@@ -225,21 +225,15 @@ describe('Visitor.accumulate', () => {
 			const enterHandler = visitor['ImportDeclaration'];
 			expect(enterHandler).toBeDefined();
 			if (enterHandler) {
-				yield* enterHandler({
-					type: 'ImportDeclaration',
-					source: { value: 'effect' }
-				} as never);
-				yield* enterHandler({
-					type: 'ImportDeclaration',
-					source: { value: 'node:fs' }
-				} as never);
+				yield* enterHandler(Testing.importDecl('effect'));
+				yield* enterHandler(Testing.importDecl('node:fs'));
 			}
 
 			// Simulate Program:exit
 			const exitHandler = visitor['Program:exit'];
 			expect(exitHandler).toBeDefined();
 			if (exitHandler) {
-				yield* exitHandler({ type: 'Program' } as never);
+				yield* exitHandler(Testing.program());
 			}
 
 			const accumulated = yield* Ref.get(results);
@@ -259,13 +253,13 @@ describe('Visitor.accumulate', () => {
 			const enterHandler = visitor['CallExpression'];
 			expect(enterHandler).toBeDefined();
 			if (enterHandler) {
-				yield* enterHandler(Testing.callOfMember('a', 'b') as never);
+				yield* enterHandler(Testing.callOfMember('a', 'b'));
 			}
 
 			const exitHandler = visitor['Program:exit'];
 			expect(exitHandler).toBeDefined();
 			if (exitHandler) {
-				yield* exitHandler({ type: 'Program' } as never);
+				yield* exitHandler(Testing.program());
 			}
 
 			const accumulated = yield* Ref.get(results);
