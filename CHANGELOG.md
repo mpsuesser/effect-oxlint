@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file. The format is b
 
 ## [Unreleased]
 
+## [0.5.1]
+
+### Fixed
+
+- README examples: code blocks are indented with spaces instead of tabs, and `yield*` is written as one token instead of being split across lines.
+
 ## [0.5.0] — Effect 4.1
 
 ### Changed
