@@ -4,7 +4,7 @@ Thanks for your interest in contributing. This guide covers everything you need 
 
 ## Prerequisites
 
-- [Bun](https://bun.sh) 1.4.0
+- [Bun](https://bun.sh) 1.4.4
 - Node.js 24.11 or newer in the 24.x line (used by Vite+ and Vitest 5)
 
 ## Setup

@@ -34,6 +34,14 @@
                 "floatingEffect": "error"
               }
             }
+          },
+          {
+            "include": ["test/**/*.ts"],
+            "options": {
+              "diagnosticSeverity": {
+                "unstableApiUsage": "off"
+              }
+            }
           }
         ]
       }
