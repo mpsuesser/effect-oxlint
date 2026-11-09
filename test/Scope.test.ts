@@ -137,8 +137,31 @@ describe('Scope.isReadOnly', () => {
 		expect(Scope.isReadOnly(v)).toBe(true);
 	});
 
-	test('returns false when no read-only references', () => {
-		const v = Testing.variable('x', { references: [writeRef()] });
+	test('treats the declaration initializer as part of a read-only variable', () => {
+		// const x = 1; use(x)
+		const v = Testing.variable('x', {
+			references: [{ ...writeRef(), init: true }, readRef()]
+		});
+		expect(Scope.isReadOnly(v)).toBe(true);
+	});
+
+	test('returns false when the variable is reassigned', () => {
+		// let x = 1; x = 2; use(x)
+		const v = Testing.variable('x', {
+			references: [{ ...writeRef(), init: true }, writeRef(), readRef()]
+		});
+		expect(Scope.isReadOnly(v)).toBe(false);
+	});
+
+	test('returns false for read-write references such as x++', () => {
+		const v = Testing.variable('x', { references: [readWriteRef()] });
+		expect(Scope.isReadOnly(v)).toBe(false);
+	});
+
+	test('returns false when the variable is never read', () => {
+		const v = Testing.variable('x', {
+			references: [{ ...writeRef(), init: true }]
+		});
 		expect(Scope.isReadOnly(v)).toBe(false);
 	});
 });

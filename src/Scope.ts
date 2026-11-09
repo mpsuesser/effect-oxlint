@@ -85,12 +85,17 @@ export const isWritten = (variable: Variable): boolean =>
 	Arr.some(variable.references, (ref) => ref.isWrite());
 
 /**
- * Check whether a variable is only read (no writes).
+ * Check whether a variable is only read: it has at least one read
+ * reference and is never written except by its declaration initializer.
+ *
+ * `const x = 1; use(x)` is read-only. `let x = 1; x = 2; use(x)`, `x++`,
+ * and a variable that is never read are not.
  *
  * @since 0.2.0
  */
 export const isReadOnly = (variable: Variable): boolean =>
-	Arr.some(variable.references, (ref) => ref.isReadOnly());
+	isUsed(variable) &&
+	Arr.every(variable.references, (ref) => ref.init || !ref.isWrite());
 
 // ---------------------------------------------------------------------------
 // Reference helpers
