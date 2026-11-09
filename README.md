@@ -248,7 +248,7 @@ import * as Ref from 'effect/Ref';
 import { AST, Visitor } from 'effect-oxlint';
 
 // inside a Rule.define `create` generator
-const depthRef = yield * Ref.make(0);
+const depthRef = yield* Ref.make(0);
 const tracker = Visitor.tracked(
   'CallExpression',
   // node is typed as ESTree.CallExpression
@@ -267,13 +267,11 @@ import * as Effect from 'effect/Effect';
 import { AST, Visitor } from 'effect-oxlint';
 
 // inside a Rule.define `create` generator
-const visitor =
-  yield *
-  Visitor.accumulate(
-    'ExportNamedDeclaration',
-    (node) => AST.narrow(node, 'ExportNamedDeclaration'),
-    (exports) => Effect.log(`collected ${exports.length} exports`) // analyze here
-  );
+const visitor = yield* Visitor.accumulate(
+  'ExportNamedDeclaration',
+  (node) => AST.narrow(node, 'ExportNamedDeclaration'),
+  (exports) => Effect.log(`collected ${exports.length} exports`) // analyze here
+);
 ```
 
 ### Filter by filename
@@ -284,9 +282,10 @@ Restrict a visitor to specific files:
 import { Visitor } from 'effect-oxlint';
 
 // inside a Rule.define `create` generator
-const visitor =
-  yield *
-  Visitor.filter((filename) => !filename.endsWith('.test.ts'), mainVisitor);
+const visitor = yield* Visitor.filter(
+  (filename) => !filename.endsWith('.test.ts'),
+  mainVisitor
+);
 ```
 
 ## AST Matching
@@ -354,7 +353,7 @@ import type { ESTree } from 'effect-oxlint';
 import { Diagnostic, RuleContext } from 'effect-oxlint';
 
 // inside a Rule.define `create` generator
-const ctx = yield * RuleContext;
+const ctx = yield* RuleContext;
 
 const handler = (node: ESTree.Node) =>
   fallibleEffect(node).pipe(
