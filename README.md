@@ -46,31 +46,31 @@ import * as Option from 'effect/Option';
 import { AST, Diagnostic, Rule, RuleContext } from 'effect-oxlint';
 
 const noJsonParse = Rule.define({
-	name: 'no-json-parse',
-	meta: Rule.meta({
-		type: 'suggestion',
-		description: 'Use Schema for JSON decoding instead of JSON.parse'
-	}),
-	create: function* () {
-		const ctx = yield* RuleContext;
-		return {
-			// node is typed as ESTree.MemberExpression automatically
-			MemberExpression: (node) =>
-				Option.match(
-					AST.matchMember(node, 'JSON', ['parse', 'stringify']),
-					{
-						onNone: () => Effect.void,
-						onSome: (matched) =>
-							ctx.report(
-								Diagnostic.make({
-									node: matched,
-									message: 'Use Schema for JSON'
-								})
-							)
-					}
-				)
-		};
-	}
+  name: 'no-json-parse',
+  meta: Rule.meta({
+    type: 'suggestion',
+    description: 'Use Schema for JSON decoding instead of JSON.parse'
+  }),
+  create: function* () {
+    const ctx = yield* RuleContext;
+    return {
+      // node is typed as ESTree.MemberExpression automatically
+      MemberExpression: (node) =>
+        Option.match(
+          AST.matchMember(node, 'JSON', ['parse', 'stringify']),
+          {
+            onNone: () => Effect.void,
+            onSome: (matched) =>
+              ctx.report(
+                Diagnostic.make({
+                  node: matched,
+                  message: 'Use Schema for JSON'
+                })
+              )
+          }
+        )
+    };
+  }
 });
 ```
 
@@ -85,26 +85,26 @@ import * as Schema from 'effect/Schema';
 import { Diagnostic, Rule, RuleContext } from 'effect-oxlint';
 
 const maxParams = Rule.define({
-	name: 'max-params',
-	meta: Rule.meta({
-		type: 'suggestion',
-		description: 'Limit function parameters'
-	}),
-	options: Schema.Struct({ max: Schema.Finite }),
-	create: function* ({ max }) {
-		const ctx = yield* RuleContext;
-		return {
-			FunctionDeclaration: (node) =>
-				node.params.length > max
-					? ctx.report(
-							Diagnostic.make({
-								node,
-								message: `Use at most ${max} parameters`
-							})
-						)
-					: Effect.void
-		};
-	}
+  name: 'max-params',
+  meta: Rule.meta({
+    type: 'suggestion',
+    description: 'Limit function parameters'
+  }),
+  options: Schema.Struct({ max: Schema.Finite }),
+  create: function* ({ max }) {
+    const ctx = yield* RuleContext;
+    return {
+      FunctionDeclaration: (node) =>
+        node.params.length > max
+          ? ctx.report(
+              Diagnostic.make({
+                node,
+                message: `Use at most ${max} parameters`
+              })
+            )
+          : Effect.void
+    };
+  }
 });
 ```
 
@@ -126,55 +126,55 @@ import { Rule } from 'effect-oxlint';
 
 // Ban a member expression
 const noMathRandom = Rule.banMember('Math', 'random', {
-	message: 'Use the Effect Random service instead'
+  message: 'Use the Effect Random service instead'
 });
 
 // Ban an import
 const noNodeFs = Rule.banImport('node:fs', {
-	message: 'Use the Effect FileSystem service instead'
+  message: 'Use the Effect FileSystem service instead'
 });
 
 // Ban a statement type
 const noThrow = Rule.banStatement('ThrowStatement', {
-	message: 'Use Effect.fail instead of throw'
+  message: 'Use Effect.fail instead of throw'
 });
 
 // Ban bare identifier calls (e.g. fetch(), useState())
 const noFetch = Rule.banCallOf('fetch', {
-	message: 'Use Effect HTTP client instead'
+  message: 'Use Effect HTTP client instead'
 });
 
 // Ban new expressions (e.g. new Date(), new Error())
 const noNewDate = Rule.banNewExpr('Date', {
-	message: 'Use Clock service instead'
+  message: 'Use Clock service instead'
 });
 
 // Ban obj.prop(...) method calls (e.g. Effect.runSync, console.log)
 const noRunSync = Rule.banCallOfMember('Effect', ['runSync', 'runPromise'], {
-	message: 'Keep effects composable — run only at the entry point'
+  message: 'Keep effects composable — run only at the entry point'
 });
 
 // Ban multiple patterns with one rule
 const noImperativeLoops = Rule.banMultiple(
-	{
-		statements: [
-			'ForStatement',
-			'ForInStatement',
-			'ForOfStatement',
-			'WhileStatement',
-			'DoWhileStatement'
-		]
-	},
-	{ message: 'Use Arr.map / Effect.forEach instead' }
+  {
+    statements: [
+      'ForStatement',
+      'ForInStatement',
+      'ForOfStatement',
+      'WhileStatement',
+      'DoWhileStatement'
+    ]
+  },
+  { message: 'Use Arr.map / Effect.forEach instead' }
 );
 
 // Combine different ban types in a single rule
 const useClockService = Rule.banMultiple(
-	{
-		newExprs: 'Date',
-		members: [['Date', 'now']]
-	},
-	{ message: 'Use Clock service' }
+  {
+    newExprs: 'Date',
+    members: [['Date', 'now']]
+  },
+  { message: 'Use Clock service' }
 );
 ```
 
@@ -184,14 +184,14 @@ const useClockService = Rule.banMultiple(
 import { Plugin } from 'effect-oxlint';
 
 export default Plugin.define({
-	name: 'my-effect-rules',
-	specifier: 'oxlint-plugin-my-effect-rules',
-	rules: {
-		'no-json-parse': noJsonParse,
-		'no-math-random': noMathRandom,
-		'no-node-fs': noNodeFs,
-		'no-throw': noThrow
-	}
+  name: 'my-effect-rules',
+  specifier: 'oxlint-plugin-my-effect-rules',
+  rules: {
+    'no-json-parse': noJsonParse,
+    'no-math-random': noMathRandom,
+    'no-node-fs': noNodeFs,
+    'no-throw': noThrow
+  }
 });
 ```
 
@@ -202,7 +202,7 @@ import { defineConfig } from 'oxlint';
 import plugin from 'oxlint-plugin-my-effect-rules';
 
 export default defineConfig({
-	extends: [plugin.configs.recommended]
+  extends: [plugin.configs.recommended]
 });
 ```
 
@@ -212,16 +212,16 @@ By default, every rule is recommended at `error` severity. To publish a curated 
 
 ```ts
 export default Plugin.define({
-	name: 'my-effect-rules',
-	specifier: 'oxlint-plugin-my-effect-rules',
-	rules: {
-		'no-json-parse': noJsonParse,
-		'no-math-random': noMathRandom
-	},
-	recommended: {
-		severity: 'warn',
-		rules: ['no-json-parse']
-	}
+  name: 'my-effect-rules',
+  specifier: 'oxlint-plugin-my-effect-rules',
+  rules: {
+    'no-json-parse': noJsonParse,
+    'no-math-random': noMathRandom
+  },
+  recommended: {
+    severity: 'warn',
+    rules: ['no-json-parse']
+  }
 });
 ```
 
@@ -250,10 +250,10 @@ import { AST, Visitor } from 'effect-oxlint';
 // inside a Rule.define `create` generator
 const depthRef = yield * Ref.make(0);
 const tracker = Visitor.tracked(
-	'CallExpression',
-	// node is typed as ESTree.CallExpression
-	(node) => AST.isCallOf(node, 'Effect', 'gen'),
-	depthRef
+  'CallExpression',
+  // node is typed as ESTree.CallExpression
+  (node) => AST.isCallOf(node, 'Effect', 'gen'),
+  depthRef
 );
 // depthRef increments on enter, decrements on exit
 ```
@@ -268,12 +268,12 @@ import { AST, Visitor } from 'effect-oxlint';
 
 // inside a Rule.define `create` generator
 const visitor =
-	yield *
-	Visitor.accumulate(
-		'ExportNamedDeclaration',
-		(node) => AST.narrow(node, 'ExportNamedDeclaration'),
-		(exports) => Effect.log(`collected ${exports.length} exports`) // analyze here
-	);
+  yield *
+  Visitor.accumulate(
+    'ExportNamedDeclaration',
+    (node) => AST.narrow(node, 'ExportNamedDeclaration'),
+    (exports) => Effect.log(`collected ${exports.length} exports`) // analyze here
+  );
 ```
 
 ### Filter by filename
@@ -285,8 +285,8 @@ import { Visitor } from 'effect-oxlint';
 
 // inside a Rule.define `create` generator
 const visitor =
-	yield *
-	Visitor.filter((filename) => !filename.endsWith('.test.ts'), mainVisitor);
+  yield *
+  Visitor.filter((filename) => !filename.endsWith('.test.ts'), mainVisitor);
 ```
 
 ## AST Matching
@@ -309,8 +309,8 @@ pipe(memberNode, AST.matchMember('Effect', 'gen'));
 // Chain: narrow an ESTree.Node, then match
 declare const node: ESTree.Node;
 pipe(
-	AST.narrow(node, 'CallExpression'),
-	Option.flatMap(AST.matchCallOf('Effect', 'gen'))
+  AST.narrow(node, 'CallExpression'),
+  Option.flatMap(AST.matchCallOf('Effect', 'gen'))
 );
 
 // Extract member path: a.b.c -> Some(['a', 'b', 'c'])
@@ -331,14 +331,14 @@ const diag = Diagnostic.make({ node, message: 'Avoid this pattern' });
 
 // With autofix
 const fixed = Diagnostic.withFix(
-	diag,
-	Diagnostic.replaceText(node, 'replacement')
+  diag,
+  Diagnostic.replaceText(node, 'replacement')
 );
 
 // Compose multiple fixes
 const multiFix = Diagnostic.composeFixes(
-	Diagnostic.insertBefore(node, 'prefix'),
-	Diagnostic.insertAfter(node, 'suffix')
+  Diagnostic.insertBefore(node, 'prefix'),
+  Diagnostic.insertAfter(node, 'suffix')
 );
 ```
 
@@ -357,13 +357,13 @@ import { Diagnostic, RuleContext } from 'effect-oxlint';
 const ctx = yield * RuleContext;
 
 const handler = (node: ESTree.Node) =>
-	fallibleEffect(node).pipe(
-		Effect.catch(() =>
-			ctx.report(
-				Diagnostic.make({ node, message: 'could not analyse node' })
-			)
-		)
-	);
+  fallibleEffect(node).pipe(
+    Effect.catch(() =>
+      ctx.report(
+        Diagnostic.make({ node, message: 'could not analyse node' })
+      )
+    )
+  );
 ```
 
 Invalid rule options are the one exception: they raise a `RuleOptionsError`
@@ -393,27 +393,27 @@ import { Rule } from 'effect-oxlint';
 import * as Testing from 'effect-oxlint/testing';
 
 describe('no-json-parse', () => {
-	test('reports JSON.parse', () => {
-		const result = Testing.runRule(
-			noJsonParse,
-			'MemberExpression',
-			Testing.memberExpr('JSON', 'parse')
-		);
-		Testing.expectDiagnostics(result, [{ message: 'Use Schema for JSON' }]);
-		// Or use the messages() helper — returns Option per diagnostic
-		expect(Testing.messages(result)).toEqual([
-			Option.some('Use Schema for JSON')
-		]);
-	});
+  test('reports JSON.parse', () => {
+    const result = Testing.runRule(
+      noJsonParse,
+      'MemberExpression',
+      Testing.memberExpr('JSON', 'parse')
+    );
+    Testing.expectDiagnostics(result, [{ message: 'Use Schema for JSON' }]);
+    // Or use the messages() helper — returns Option per diagnostic
+    expect(Testing.messages(result)).toEqual([
+      Option.some('Use Schema for JSON')
+    ]);
+  });
 
-	test('ignores other member expressions', () => {
-		const result = Testing.runRule(
-			noJsonParse,
-			'MemberExpression',
-			Testing.memberExpr('console', 'log')
-		);
-		Testing.expectNoDiagnostics(result);
-	});
+  test('ignores other member expressions', () => {
+    const result = Testing.runRule(
+      noJsonParse,
+      'MemberExpression',
+      Testing.memberExpr('console', 'log')
+    );
+    Testing.expectNoDiagnostics(result);
+  });
 });
 ```
 
@@ -428,8 +428,8 @@ Testing.ifStmt(); // minimal IfStatement node
 
 // program() accepts a comments parameter for comment-based rules
 Testing.program(
-	[Testing.exprStmt(Testing.callExpr('foo'))],
-	[Testing.comment('Line', ' eslint-disable')]
+  [Testing.exprStmt(Testing.callExpr('foo'))],
+  [Testing.comment('Line', ' eslint-disable')]
 );
 ```
 
