@@ -1,0 +1,13 @@
+{
+  "enabledPlugins": {
+    "enfect@enfect": true
+  },
+  "extraKnownMarketplaces": {
+    "enfect": {
+      "source": {
+        "source": "github",
+        "repo": "mpsuesser/enfect"
+      }
+    }
+  }
+}
