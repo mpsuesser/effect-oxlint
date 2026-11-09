@@ -35,7 +35,7 @@ test/          11 test files — one per source module
 vite.config.ts Lint rules, formatting, test config (vite-plus)
 ```
 
-Single-package project. Bun is the package manager (`bun@1.4.0`). No monorepo tooling.
+Single-package project. Bun is the package manager (`bun@1.4.4`). No monorepo tooling.
 
 ## Code Style
 
@@ -130,7 +130,7 @@ Every source file follows this layout:
 
 ### Testing
 
-- Framework: Vitest 5 + `@effect/vitest@4.0.0`, aligned with `effect@4.0.0`
+- Framework: Vitest + `@effect/vitest`, pinned to the same release as `effect` in `package.json`
 - Import test utilities: `import { describe, expect, test } from '@effect/vitest'`
 - Effectful tests: `it.effect('name', () => Effect.gen(function* () { ... }).pipe(Effect.provide(TestLayer)))`
 - Pure tests: `test('name', () => { expect(...).toBe(...) })`
@@ -153,18 +153,13 @@ Every source file follows this layout:
 - `withSourceCode` pattern: `Effect.service(RuleContext).pipe(Effect.map(ctx => fn(ctx.sourceCode)))`
 - Visitors are `Record<string, (node: ESTree.Node) => Effect<void>>`
 - `toOxlintVisitor` converts Effect visitors to plain oxlint visitors at the boundary
-- FFI boundary casts (`as never`) are used in `Testing.ts` node builders and are documented
+- `Testing.ts` builders go through one internal `mock()` cast; add new builders through it
+- oxlint passes options only to rules with `meta.schema`; `Rule.define` sets `schema: false` when an Effect `options` schema is given, so the Effect Schema validates. Unit tests cannot catch this (the mock context skips oxlint's validation), so check option-related changes against a real `oxlint` run
 
 ### Lint Rules (from vite.config.ts)
 
-The project dogfoods its own `oxlint-effect` rules. Key enforced rules:
+The project dogfoods the `@enfect/oxlint` rules (`effect/*`) via `effect.configs.recommended`, every rule at **error**. `vite.config.ts` is the source of truth for the boundary overrides (`Rule.ts`, `SourceCode.ts`, `Testing.ts`, `Visitor.ts`) and test-file overrides.
 
-- `effect/throw-in-effect-gen`: **error** — no throwing inside Effect.gen
-- `effect/vm-in-wrong-file`: **error** — view models in correct files
-- `effect/no-opaque-instance-fields`: **error** — no opaque instance fields
-- `@typescript-eslint/no-explicit-any`: **error**
-- `@typescript-eslint/no-non-null-assertion`: **error**
-- ~50 additional `effect/*` rules at `warn` level (prefer-option-over-null, avoid-native-fetch, prefer-match-over-switch, etc.)
-
-Test file overrides: `avoid-untagged-errors` and `avoid-try-catch` disabled.
-FFI boundary overrides: `prefer-option-over-null`, `casting-awareness`, `avoid-any`, `avoid-native-object-helpers`, `effect-run-in-body` disabled for `SourceCode.ts`, `Testing.ts`, `Rule.ts`, `Visitor.ts`.
+- Every type assertion carries a `// SAFETY:` comment directly above it stating the invariant that makes it sound
+- A kept `oxlint-disable-next-line` names the rule and gives a reason after `--`; place it on the line the diagnostic points at
+- Prefer fixing the code (named types, `Testing` builders instead of `as never` in tests) over a disable

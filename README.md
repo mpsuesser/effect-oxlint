@@ -6,15 +6,15 @@
 
 Write [oxlint](https://oxc.rs/docs/guide/usage/linter) custom lint rules with [Effect v4](https://effect.website).
 
-Targets **Effect 4.0.0 stable** with a `^4.0.0` peer dependency. Keep directly
-used Effect-family packages on the same release. Development uses
-`@effect/vitest@4.0.0`, Vitest 5, and Vite+ 1.0.
+Targets **Effect 4.1** with a `^4.1.0` peer dependency. Keep directly used
+Effect-family packages on the same release. Development uses `effect@4.1.2`,
+`@effect/vitest@4.1.2`, Vitest 5, Vite+ 1.5, and oxlint 1.92.
 
 `effect-oxlint` wraps `@oxlint/plugins` in Effect idioms so rule authors get typed errors, composable visitors, `Option`-safe AST matching, and `Ref`-based state without any mutable variables.
 
 ## Features
 
-- **`Rule.define`** — write `create` as an Effect generator; use `yield*` for state, context, and diagnostics
+- **`Rule.define`** — write `create` as an Effect generator; use `yield*` for state, context, and diagnostics; decode rule options with `Schema`
 - **`Visitor.*`** — composable visitor combinators: `on`, `onExit`, `merge`, `tracked`, `filter`, `accumulate`
 - **`AST.*`** — `Option`-returning matchers with dual API (data-first and data-last): `matchMember`, `matchCallOf`, `matchImport`, `narrow`, `memberPath`
 - **`Diagnostic.*`** — structured diagnostic builders with composable autofixes
@@ -25,11 +25,11 @@ used Effect-family packages on the same release. Development uses
 ## Install
 
 ```sh
-npm install effect-oxlint effect@4.0.0
+npm install effect-oxlint effect@^4.1.0
 ```
 
 ```sh
-bun add effect-oxlint effect@4.0.0
+bun add effect-oxlint effect@^4.1.0
 ```
 
 ```sh
@@ -73,6 +73,51 @@ const noJsonParse = Rule.define({
 	}
 });
 ```
+
+### Typed rule options
+
+Pass an Effect `Schema` as `options` and `create` receives the decoded first
+option:
+
+```ts
+import * as Effect from 'effect/Effect';
+import * as Schema from 'effect/Schema';
+import { Diagnostic, Rule, RuleContext } from 'effect-oxlint';
+
+const maxParams = Rule.define({
+	name: 'max-params',
+	meta: Rule.meta({
+		type: 'suggestion',
+		description: 'Limit function parameters'
+	}),
+	options: Schema.Struct({ max: Schema.Finite }),
+	create: function* ({ max }) {
+		const ctx = yield* RuleContext;
+		return {
+			FunctionDeclaration: (node) =>
+				node.params.length > max
+					? ctx.report(
+							Diagnostic.make({
+								node,
+								message: `Use at most ${max} parameters`
+							})
+						)
+					: Effect.void
+		};
+	}
+});
+```
+
+```json
+{ "rules": { "my-plugin/max-params": ["error", { "max": 3 }] } }
+```
+
+oxlint only passes options to rules that declare `meta.schema`. When
+`options` is set and `meta.schema` is not, `Rule.define` sets
+`meta.schema: false` so the Effect Schema does the validating. Invalid
+options stop linting with a `RuleOptionsError` that names the rule. To also
+validate with JSON Schema (for editor tooling, say), pass `schema` to
+`Rule.meta` yourself.
 
 ### 2. Use convenience factories for common patterns
 
@@ -202,6 +247,7 @@ Replace mutable `let depth = 0` counters with `Visitor.tracked`:
 import * as Ref from 'effect/Ref';
 import { AST, Visitor } from 'effect-oxlint';
 
+// inside a Rule.define `create` generator
 const depthRef = yield * Ref.make(0);
 const tracker = Visitor.tracked(
 	'CallExpression',
@@ -217,16 +263,16 @@ const tracker = Visitor.tracked(
 Collect data during traversal, then analyze at `Program:exit`:
 
 ```ts
-import { Visitor, AST } from 'effect-oxlint';
+import * as Effect from 'effect/Effect';
+import { AST, Visitor } from 'effect-oxlint';
 
+// inside a Rule.define `create` generator
 const visitor =
 	yield *
 	Visitor.accumulate(
 		'ExportNamedDeclaration',
 		(node) => AST.narrow(node, 'ExportNamedDeclaration'),
-		function* (exports) {
-			// all exports collected — analyze them here
-		}
+		(exports) => Effect.log(`collected ${exports.length} exports`) // analyze here
 	);
 ```
 
@@ -237,6 +283,7 @@ Restrict a visitor to specific files:
 ```ts
 import { Visitor } from 'effect-oxlint';
 
+// inside a Rule.define `create` generator
 const visitor =
 	yield *
 	Visitor.filter((filename) => !filename.endsWith('.test.ts'), mainVisitor);
@@ -302,17 +349,25 @@ Visitor handlers — and the `create` generator itself — have a fixed error ch
 If a handler needs to run a fallible sub-effect, catch the failure inside the handler and decide how to surface it — typically as a reported diagnostic:
 
 ```ts
+import * as Effect from 'effect/Effect';
+import type { ESTree } from 'effect-oxlint';
+import { Diagnostic, RuleContext } from 'effect-oxlint';
+
+// inside a Rule.define `create` generator
 const ctx = yield * RuleContext;
 
 const handler = (node: ESTree.Node) =>
 	fallibleEffect(node).pipe(
 		Effect.catch(() =>
 			ctx.report(
-				makeDiagnostic({ node, message: 'could not analyse node' })
+				Diagnostic.make({ node, message: 'could not analyse node' })
 			)
 		)
 	);
 ```
+
+Invalid rule options are the one exception: they raise a `RuleOptionsError`
+defect when the rule is created (see [Typed rule options](#typed-rule-options)).
 
 See the JSDoc on `Rule.define` and `EffectHandler` in `src/Visitor.ts` for the full contract.
 
@@ -321,10 +376,10 @@ See the JSDoc on `Rule.define` and `EffectHandler` in `src/Visitor.ts` for the f
 `effect-oxlint` re-exports all `@oxlint/plugins` types so consumers don't need a direct dependency for type imports:
 
 ```ts
-import type { ESTree, OxlintPlugin, CreateRule } from 'effect-oxlint';
+import type { CreateRule, ESTree, OxlintPlugin } from 'effect-oxlint';
 
-// ESTree namespace includes all AST node types
-const node: ESTree.CallExpression = /* ... */;
+// The ESTree namespace includes every AST node type
+declare const call: ESTree.CallExpression;
 ```
 
 ## Testing
@@ -382,19 +437,19 @@ Available builders include `id`, `memberExpr`, `computedMemberExpr`, `chainedMem
 
 ## Modules
 
-| Module        | Purpose                                                                                                                                     |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Rule`        | Core rule builder (`define`, `meta`, `banMember`, `banImport`, `banStatement`, `banCallOf`, `banCallOfMember`, `banNewExpr`, `banMultiple`) |
-| `Visitor`     | Composable visitors (`on`, `onExit`, `merge`, `tracked`, `filter`, `accumulate`)                                                            |
-| `AST`         | `Option`-returning pattern matchers (`matchMember`, `matchCallOf`, `matchImport`, `narrow`, `memberPath`, `findAncestor`)                   |
-| `Diagnostic`  | Diagnostic construction and autofix helpers                                                                                                 |
-| `RuleContext` | Effect service with access to file info, source code, and `report`                                                                          |
-| `SourceCode`  | Effectful queries: text, tokens, comments, scope, node location                                                                             |
-| `Scope`       | Variable lookup and reference analysis with `Option`                                                                                        |
-| `Plugin`      | `define` and `merge` for plugin assembly                                                                                                    |
-| `Comment`     | Comment type predicates (`isLine`, `isBlock`, `isJSDoc`, `isDisableDirective`)                                                              |
-| `Token`       | Token type predicates (`isKeyword`, `isPunctuator`, `isIdentifier`, `isString`)                                                             |
-| `Testing`     | Mock builders, `runRule`, `expectDiagnostics`, `messages` for test harnesses — **import from `effect-oxlint/testing`**                      |
+| Module        | Purpose                                                                                                                                                         |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Rule`        | Core rule builder (`define`, `meta`, `RuleOptionsError`, `banMember`, `banImport`, `banStatement`, `banCallOf`, `banCallOfMember`, `banNewExpr`, `banMultiple`) |
+| `Visitor`     | Composable visitors (`on`, `onExit`, `merge`, `tracked`, `filter`, `accumulate`)                                                                                |
+| `AST`         | `Option`-returning pattern matchers (`matchMember`, `matchCallOf`, `matchImport`, `narrow`, `memberPath`, `findAncestor`)                                       |
+| `Diagnostic`  | Diagnostic construction and autofix helpers                                                                                                                     |
+| `RuleContext` | Effect service with access to file info, source code, and `report`                                                                                              |
+| `SourceCode`  | Effectful queries: text, tokens, comments, scope, node location                                                                                                 |
+| `Scope`       | Variable lookup and reference analysis with `Option`                                                                                                            |
+| `Plugin`      | `define` and `merge` for plugin assembly                                                                                                                        |
+| `Comment`     | Comment type predicates (`isLine`, `isBlock`, `isJSDoc`, `isDisableDirective`)                                                                                  |
+| `Token`       | Token type predicates (`isKeyword`, `isPunctuator`, `isIdentifier`, `isString`)                                                                                 |
+| `Testing`     | Mock builders, `runRule`, `expectDiagnostics`, `messages` for test harnesses — **import from `effect-oxlint/testing`**                                          |
 
 ## Development
 

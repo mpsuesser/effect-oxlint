@@ -4,6 +4,29 @@ All notable changes to this project are documented in this file. The format is b
 
 ## [Unreleased]
 
+### Changed
+
+- Target Effect 4.1: the `effect` peer range is now `^4.1.0`. Development uses `effect` and `@effect/vitest` 4.1.2, and `@oxlint/plugins` 1.92 or newer is required. Also updated: Vite+ 1.5, Vitest 5.1, `@effect/tsgo` 0.67, tsdown 0.23.7, and Bun 1.4.4.
+- `Rule.meta` accepts `schema`, `defaultOptions`, `deprecated` and `replacedBy`, and copies them into the generated `RuleMeta`. Fields left unset are omitted from the result.
+- Options that fail to decode against a rule's `options` schema now raise a `RuleOptionsError` naming the rule and the schema issue, not an anonymous `SchemaError`.
+- `Testing.variable` references accept `init`, matching oxlint's `Reference.init`.
+
+### Added
+
+- `Rule.RuleOptionsError`, the tagged defect raised for invalid rule options.
+- `Testing.MockAncestorNode`, the named type for the nodes built by `astNode` and `withParentChain`.
+
+### Fixed
+
+- Rules defined with an `options` schema could not be configured with options: oxlint rejected them with "Rule '…' does not accept options" because `meta.schema` was unset. `Rule.define` now sets `meta.schema: false` in that case, so the Effect Schema validates the options. An explicit `meta.schema` is kept.
+- `Scope.isReadOnly` returned `true` for any variable with at least one plain read, including reassigned ones. It now returns `true` only when the variable is read and never written except by its declaration initializer, as documented.
+- Corrected JSDoc and README examples that did not compile: generator handlers passed to `Visitor.on` and `Visitor.accumulate`, `RuleContext.report(...)` (not exported; use `ctx.report`), and the `effect-oxlint/testing` import path. `AST.narrow` had lost its JSDoc to an internal helper; it is restored.
+
+### Internal
+
+- Lint with the `@enfect/oxlint` recommended rules. Every remaining type assertion has a `SAFETY:` justification, and the `Testing` builders share a single internal cast.
+- Verified against real oxlint 1.92 with a plugin built from `dist/`, and against the `@enfect/oxlint` rule suite (818 tests) using the packed tarball.
+
 ## [0.4.0] — Stable Effect 4.0.0
 
 ### Changed
