@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file. The format is b
 
 ## [Unreleased]
 
+## [0.5.0] — Effect 4.1
+
 ### Changed
 
 - Target Effect 4.1: the `effect` peer range is now `^4.1.0`. Development uses `effect` and `@effect/vitest` 4.1.2, and `@oxlint/plugins` 1.92 or newer is required. Also updated: Vite+ 1.5, Vitest 5.1, `@effect/tsgo` 0.67, tsdown 0.23.7, and Bun 1.4.4.
